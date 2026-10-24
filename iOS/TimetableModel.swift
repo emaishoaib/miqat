@@ -8,27 +8,24 @@ final class TimetableModel {
     enum State {
         case loading
         case loaded(PrayerTimesResponse)
-        case failed(String)
+        case failed(Error)
     }
 
     private(set) var state: State = .loading
 
     private let provider: any PrayerTimesProvider
-    private let coordinate: Coordinate
 
-    init(
-        provider: any PrayerTimesProvider = MockPrayerTimesProvider(),
-        coordinate: Coordinate = Coordinate(latitude: 52.4128, longitude: -1.7781)
-    ) {
+    init(provider: any PrayerTimesProvider = MockPrayerTimesProvider()) {
         self.provider = provider
-        self.coordinate = coordinate
     }
 
     func load() async {
+        state = .loading
         do {
+            let coordinate = try await CurrentLocation.coordinate()
             state = .loaded(try await provider.prayerTimes(near: coordinate, from: .now, days: 2))
         } catch {
-            state = .failed(error.localizedDescription)
+            state = .failed(error)
         }
     }
 }

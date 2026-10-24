@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var model = TimetableModel()
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         Group {
@@ -13,12 +14,24 @@ struct ContentView: View {
                 TimelineView(.everyMinute) { context in
                     TimetableView(response: response, now: context.date)
                 }
-            case .failed(let message):
-                ContentUnavailableView(
-                    "Couldn't load prayer times",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(message)
-                )
+            case .failed(let error):
+                ContentUnavailableView {
+                    Label("Couldn't load prayer times", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(error.localizedDescription)
+                } actions: {
+                    if case CurrentLocationError.denied = error {
+                        Button("Open Settings") {
+                            openURL(URL(string: UIApplication.openSettingsURLString)!)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        Button("Try Again") {
+                            Task { await model.load() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
             }
         }
         .task { await model.load() }
