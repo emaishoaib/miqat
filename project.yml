@@ -23,6 +23,11 @@ targets:
     sources: [iOS]
     dependencies:
       - package: PrayerKit
+      - target: Miqat-Widget
+    entitlements:
+      path: iOS/Miqat.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.mashoaib.miqat]
     settings:
       base:
         PRODUCT_NAME: Miqat
@@ -32,4 +37,25 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Miqat uses your location to find prayer times from the mosques nearest to you.
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+
+  Miqat-Widget:
+    type: app-extension
+    platform: iOS
+    sources: [Widget]
+    dependencies:
+      - package: PrayerKit
+    entitlements:
+      path: Widget/Miqat-Widget.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.mashoaib.miqat]
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Miqat
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mashoaib.miqat.widget
         TARGETED_DEVICE_FAMILY: "1"

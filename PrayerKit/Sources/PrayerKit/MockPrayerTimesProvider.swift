@@ -25,6 +25,10 @@ public struct MockPrayerTimesProvider: PrayerTimesProvider {
     }
 
     public func prayerTimes(near coordinate: Coordinate, from start: Date, days: Int) async throws -> PrayerTimesResponse {
+        response(near: coordinate, from: start, days: days)
+    }
+
+    public func response(near coordinate: Coordinate, from start: Date, days: Int) -> PrayerTimesResponse {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let firstDay = calendar.startOfDay(for: start)
