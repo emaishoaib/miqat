@@ -12,6 +12,7 @@ final class MenuBarStatus {
     }
 
     private(set) var next: PrayerTime?
+    private(set) var detail = ""
     private(set) var style: Style = .normal
 
     private let model: TimetableModel
@@ -56,19 +57,28 @@ final class MenuBarStatus {
         }
         self.next = next
 
-        let urgency = PrayerUrgency(timeUntilNext: next.begins.timeIntervalSince(now))
+        let remaining = next.begins.timeIntervalSince(now)
+        let showsCountdown = remaining < 60 * 60
+        detail = showsCountdown
+            ? Self.countdown(remaining)
+            : next.begins.formatted(date: .omitted, time: .shortened)
+
+        let urgency = acknowledgedPrayer == next.begins ? .normal : PrayerUrgency(timeUntilNext: remaining)
         switch urgency {
-        case _ where acknowledgedPrayer == next.begins, .normal:
+        case .normal:
             style = .normal
-            return Self.untilNextMinute(after: now)
         case .soon:
             style = .alert
-            return Self.untilNextMinute(after: now)
         case .imminent:
             blinkOn.toggle()
             style = blinkOn ? .alert : .alertDimmed
-            return .milliseconds(600)
         }
+        return showsCountdown ? .milliseconds(500) : Self.untilNextMinute(after: now)
+    }
+
+    private static func countdown(_ interval: TimeInterval) -> String {
+        let seconds = max(0, Int(interval.rounded(.up)))
+        return String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 
     private static func untilNextMinute(after date: Date) -> Duration {

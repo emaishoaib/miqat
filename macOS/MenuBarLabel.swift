@@ -9,7 +9,7 @@ struct MenuBarLabel: View {
         if let next = status.next,
            let image = Self.image(
                name: next.prayer.name,
-               time: next.begins.formatted(date: .omitted, time: .shortened),
+               time: status.detail,
                style: status.style
            ) {
             Image(nsImage: image)
