@@ -108,7 +108,6 @@ private struct NextPrayerCard: View {
             }
             Text("Begins at \(time.begins.formatted(date: .omitted, time: .shortened))")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
             if let jamaat = time.jamaat {
                 Text("Jamaat at \(jamaat.formatted(date: .omitted, time: .shortened))")
                     .font(.subheadline)
