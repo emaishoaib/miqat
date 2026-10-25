@@ -2,11 +2,18 @@ import datetime
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
-from app.dependencies import get_now, get_places_client, get_session
+from app.dependencies import (
+    get_now,
+    get_places_client,
+    get_session,
+    get_time_zone_client,
+)
 from app.main import app
 from app.models import Mosque, Prayer
 from app.places import NearbyMosque
+from app.time_zones import TimeZoneLookupError
 from app.timetables import save_timetable
 
 NOW = datetime.datetime(2027, 6, 1, 9, 0, tzinfo=datetime.UTC)
@@ -34,6 +41,16 @@ class FakePlaces:
         ]
 
 
+class FakeTimeZones:
+    def __init__(self, fails=False):
+        self.fails = fails
+
+    def time_zone_at(self, latitude, longitude):
+        if self.fails:
+            raise TimeZoneLookupError("UNKNOWN_ERROR")
+        return "Europe/London"
+
+
 def add_mosque(session, place_id, days):
     mosque = Mosque(
         place_id=place_id,
@@ -52,9 +69,12 @@ def add_mosque(session, place_id, days):
 
 @pytest.fixture
 def client(session):
-    def use(place_ids):
+    def use(place_ids, time_zones_fail=False):
         app.dependency_overrides[get_session] = lambda: session
         app.dependency_overrides[get_places_client] = lambda: FakePlaces(place_ids)
+        app.dependency_overrides[get_time_zone_client] = lambda: FakeTimeZones(
+            time_zones_fail
+        )
         app.dependency_overrides[get_now] = lambda: NOW
         return TestClient(app)
 
@@ -140,3 +160,43 @@ def test_sends_the_new_timetable_after_it_changes(session, client):
     assert response.status_code == 200
     assert response.json()["version"] == "masjid:2"
     assert response.headers["ETag"] != etag
+
+
+def test_adds_unknown_mosques_closer_than_the_one_that_answered(session, client):
+    add_mosque(session, "has-times", {TODAY: DAY})
+
+    client(["new-near", "has-times", "new-far"]).get("/prayer-times", params=SOLIHULL)
+
+    added = session.get(Mosque, "new-near")
+    assert added is not None
+    assert added.time_zone == "Europe/London"
+    assert added.timetable_updated_at is None
+    assert session.get(Mosque, "new-far") is None
+
+
+def test_adds_every_unknown_mosque_when_none_answers(session, client):
+    response = client(["first", "second"]).get("/prayer-times", params=SOLIHULL)
+
+    assert response.status_code == 404
+    assert session.get(Mosque, "first") is not None
+    assert session.get(Mosque, "second") is not None
+
+
+def test_repeat_lookups_do_not_add_the_same_mosque_twice(session, client):
+    api = client(["new"])
+
+    api.get("/prayer-times", params=SOLIHULL)
+    api.get("/prayer-times", params=SOLIHULL)
+
+    assert session.scalars(select(Mosque)).all() == [session.get(Mosque, "new")]
+
+
+def test_still_answers_when_the_time_zone_lookup_fails(session, client):
+    add_mosque(session, "has-times", {TODAY: DAY})
+
+    response = client(["new", "has-times"], time_zones_fail=True).get(
+        "/prayer-times", params=SOLIHULL
+    )
+
+    assert response.status_code == 200
+    assert session.get(Mosque, "new") is None

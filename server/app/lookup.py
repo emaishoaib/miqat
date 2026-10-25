@@ -1,29 +1,70 @@
 import datetime
+import logging
 import math
+from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
+import httpx
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Mosque, Prayer, PrayerTime
 from app.places import NearbyMosque
 from app.schemas import DayOut, MosqueOut, PrayerTimeOut, TimetableOut
+from app.time_zones import TimeZoneClient, TimeZoneLookupError
 
 PRAYER_ORDER = list(Prayer)
 EARTH_RADIUS_METERS = 6_371_000
 
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Lookup:
+    found: tuple[Mosque, list[PrayerTime]] | None = None
+    unknown: list[NearbyMosque] = field(default_factory=list)
+
 
 def nearest_with_times(
     session: Session, nearby: list[NearbyMosque], now: datetime.datetime
-) -> tuple[Mosque, list[PrayerTime]] | None:
+) -> Lookup:
+    lookup = Lookup()
     for candidate in nearby:
         mosque = session.get(Mosque, candidate.place_id)
         if mosque is None:
+            lookup.unknown.append(candidate)
             continue
         times = upcoming_times(session, mosque, now)
         if times:
-            return mosque, times
-    return None
+            lookup.found = (mosque, times)
+            return lookup
+    return lookup
+
+
+def add_unknown_mosques(
+    session: Session, mosques: list[NearbyMosque], time_zones: TimeZoneClient
+) -> None:
+    for nearby in mosques:
+        try:
+            time_zone = time_zones.time_zone_at(nearby.latitude, nearby.longitude)
+        except (httpx.HTTPError, TimeZoneLookupError) as error:
+            logger.warning("No time zone for %s: %s", nearby.place_id, error)
+            continue
+        session.add(
+            Mosque(
+                place_id=nearby.place_id,
+                name=nearby.name,
+                address=nearby.address,
+                latitude=nearby.latitude,
+                longitude=nearby.longitude,
+                time_zone=time_zone,
+            )
+        )
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
 
 
 def upcoming_times(

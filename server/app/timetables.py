@@ -9,7 +9,10 @@ DayTimes = dict[Prayer, tuple[datetime.time, datetime.time | None]]
 
 
 def save_timetable(
-    session: Session, mosque: Mosque, days: dict[datetime.date, DayTimes]
+    session: Session,
+    mosque: Mosque,
+    days: dict[datetime.date, DayTimes],
+    now: datetime.datetime | None = None,
 ) -> None:
     session.execute(
         delete(PrayerTime).where(
@@ -28,3 +31,4 @@ def save_timetable(
                 )
             )
     mosque.timetable_version = (mosque.timetable_version or 0) + 1
+    mosque.timetable_updated_at = now or datetime.datetime.now(datetime.UTC)

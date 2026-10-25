@@ -23,6 +23,7 @@ def test_seed_stores_thirty_days_of_times_for_the_example_mosque(session):
 
     assert len(session.scalars(select(PrayerTime)).all()) == 30 * 6
     assert mosque.timetable_version == 1
+    assert mosque.timetable_updated_at is not None
 
 
 def test_saving_a_day_again_replaces_it_and_bumps_the_version(session):

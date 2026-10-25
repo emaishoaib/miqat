@@ -1,7 +1,7 @@
 import datetime
 import enum
 
-from sqlalchemy import Engine, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy import DateTime, Engine, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -26,6 +26,9 @@ class Mosque(Base):
     longitude: Mapped[float]
     time_zone: Mapped[str]
     timetable_version: Mapped[int] = mapped_column(default=0)
+    timetable_updated_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
 
     prayer_times: Mapped[list["PrayerTime"]] = relationship(
         back_populates="mosque", cascade="all, delete-orphan"
