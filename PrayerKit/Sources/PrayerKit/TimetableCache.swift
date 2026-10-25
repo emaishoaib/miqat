@@ -5,6 +5,7 @@ public struct TimetableCache: Sendable {
     public static let shared = TimetableCache(suiteName: appGroup)
 
     private static let key = "timetable"
+    private static let coordinateKey = "coordinate"
 
     private let suiteName: String
 
@@ -18,6 +19,14 @@ public struct TimetableCache: Sendable {
 
     public func load() -> PrayerTimesResponse? {
         defaults?.data(forKey: Self.key).flatMap { try? JSONDecoder().decode(PrayerTimesResponse.self, from: $0) }
+    }
+
+    public func saveCoordinate(_ coordinate: Coordinate) {
+        defaults?.set(try? JSONEncoder().encode(coordinate), forKey: Self.coordinateKey)
+    }
+
+    public func loadCoordinate() -> Coordinate? {
+        defaults?.data(forKey: Self.coordinateKey).flatMap { try? JSONDecoder().decode(Coordinate.self, from: $0) }
     }
 
     private var defaults: UserDefaults? {

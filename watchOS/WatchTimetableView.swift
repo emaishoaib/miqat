@@ -4,6 +4,8 @@ import SwiftUI
 struct WatchTimetableView: View {
     let response: PrayerTimesResponse
     let now: Date
+    let isRefreshing: Bool
+    let refresh: () async -> Void
 
     var body: some View {
         let next = response.nextPrayer(after: now)
@@ -30,6 +32,22 @@ struct WatchTimetableView: View {
                     Text(HijriDate.formatted(now))
                 }
             }
+
+            Button {
+                Task { await refresh() }
+            } label: {
+                HStack {
+                    Text("Refresh")
+                    Spacer()
+                    if isRefreshing {
+                        ProgressView()
+                            .frame(width: 20)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+            }
+            .disabled(isRefreshing)
         }
     }
 }

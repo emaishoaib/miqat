@@ -28,7 +28,7 @@ struct ServerPrayerTimesProviderTests {
     """.utf8)
 
     @Test func readsTheMosqueAndItsDistance() throws {
-        let response = try ServerPrayerTimesProvider.response(from: body, statusCode: 200)
+        let response = try #require(try ServerPrayerTimesProvider.response(from: body, statusCode: 200))
 
         guard case let .mosque(mosque, distance) = response.source else {
             Issue.record("Expected a mosque source")
@@ -39,8 +39,18 @@ struct ServerPrayerTimesProviderTests {
         #expect(distance == 120.5)
     }
 
+    @Test func readsTheTimetableVersion() throws {
+        let response = try #require(try ServerPrayerTimesProvider.response(from: body, statusCode: 200))
+
+        #expect(response.version == "masjid:3")
+    }
+
+    @Test func returnsNothingWhenTheTimetableIsUnchanged() throws {
+        #expect(try ServerPrayerTimesProvider.response(from: Data(), statusCode: 304) == nil)
+    }
+
     @Test func readsEachDayStartingAtLocalMidnight() throws {
-        let response = try ServerPrayerTimesProvider.response(from: body, statusCode: 200)
+        let response = try #require(try ServerPrayerTimesProvider.response(from: body, statusCode: 200))
         let day = try #require(response.days.first)
 
         #expect(day.date == ISO8601DateFormatter().date(from: "2027-05-31T23:00:00Z"))

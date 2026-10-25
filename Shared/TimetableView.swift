@@ -4,13 +4,15 @@ import SwiftUI
 struct TimetableView: View {
     let response: PrayerTimesResponse
     let now: Date
+    let isRefreshing: Bool
+    let refresh: () async -> Void
 
     var body: some View {
         let next = response.nextPrayer(after: now)
 
         List {
             Section {
-                DateHeader(now: now, source: response.source)
+                DateHeader(now: now, source: response.source, isRefreshing: isRefreshing, refresh: refresh)
             }
 
             if let next {
@@ -34,17 +36,35 @@ struct TimetableView: View {
                 }
             }
         }
+        .refreshable { await refresh() }
     }
 }
 
 private struct DateHeader: View {
     let now: Date
     let source: TimesSource
+    let isRefreshing: Bool
+    let refresh: () async -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-                .font(.title2.bold())
+            HStack {
+                Text(now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                    .font(.title2.bold())
+                Spacer()
+                Button {
+                    Task { await refresh() }
+                } label: {
+                    if isRefreshing {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                .buttonStyle(.borderless)
+                .disabled(isRefreshing)
+                .accessibilityLabel("Refresh prayer times")
+            }
             Text(HijriDate.formatted(now))
                 .foregroundStyle(.secondary)
             sourceLabel

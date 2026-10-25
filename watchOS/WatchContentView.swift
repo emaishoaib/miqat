@@ -11,7 +11,9 @@ struct WatchContentView: View {
         case .loading:
             ProgressView()
         case .loaded(let response):
-            WatchTimetableView(response: response, now: clock.now)
+            WatchTimetableView(response: response, now: clock.now, isRefreshing: model.isRefreshing) {
+                await model.load()
+            }
         case .failed(let error):
             ContentUnavailableView {
                 Label("No prayer times", systemImage: "exclamationmark.triangle")

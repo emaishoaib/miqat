@@ -21,4 +21,14 @@ struct TimetableCacheTests {
 
         #expect(cache.load() == response)
     }
+
+    @Test func returnsTheLastSavedCoordinate() {
+        let cache = TimetableCache(suiteName: suiteName)
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let coordinate = Coordinate(latitude: 52.4128, longitude: -1.7781)
+
+        cache.saveCoordinate(coordinate)
+
+        #expect(cache.loadCoordinate() == coordinate)
+    }
 }

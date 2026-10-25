@@ -23,19 +23,24 @@ public struct ServerPrayerTimesProvider: PrayerTimesProvider {
         self.session = session
     }
 
-    public func prayerTimes(near coordinate: Coordinate) async throws -> PrayerTimesResponse {
+    public func prayerTimes(near coordinate: Coordinate, ifChangedSince version: String?) async throws -> PrayerTimesResponse? {
         let url = baseURL.appending(path: "prayer-times").appending(queryItems: [
             URLQueryItem(name: "latitude", value: String(coordinate.latitude)),
             URLQueryItem(name: "longitude", value: String(coordinate.longitude)),
         ])
-        let (data, response) = try await session.data(from: url)
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+        if let version {
+            request.setValue("\"\(version)\"", forHTTPHeaderField: "If-None-Match")
+        }
+        let (data, response) = try await session.data(for: request)
         let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
         return try Self.response(from: data, statusCode: statusCode)
     }
 
-    static func response(from data: Data, statusCode: Int) throws -> PrayerTimesResponse {
+    static func response(from data: Data, statusCode: Int) throws -> PrayerTimesResponse? {
         switch statusCode {
         case 200: break
+        case 304: return nil
         case 404: throw PrayerTimesError.noNearbyMosque
         default: throw PrayerTimesError.server(statusCode: statusCode)
         }
@@ -93,6 +98,6 @@ private struct ServerTimetable: Decodable {
             ),
             distanceInMeters: mosque.distanceMeters
         )
-        return PrayerTimesResponse(source: source, days: prayerDays)
+        return PrayerTimesResponse(source: source, days: prayerDays, version: version)
     }
 }

@@ -13,7 +13,9 @@ struct TimetableScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .loaded(let response):
             TimelineView(.everyMinute) { context in
-                TimetableView(response: response, now: context.date)
+                TimetableView(response: response, now: context.date, isRefreshing: model.isRefreshing) {
+                    await model.load()
+                }
             }
         case .failed(let error):
             ContentUnavailableView {

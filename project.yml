@@ -30,6 +30,11 @@ targets:
       path: iOS/Miqat.entitlements
       properties:
         com.apple.security.application-groups: [group.com.mashoaib.miqat]
+    info:
+      path: iOS/Info.plist
+      properties:
+        UIBackgroundModes: [fetch]
+        BGTaskSchedulerPermittedIdentifiers: [com.mashoaib.miqat.daily-refresh]
     settings:
       base:
         PRODUCT_NAME: Miqat

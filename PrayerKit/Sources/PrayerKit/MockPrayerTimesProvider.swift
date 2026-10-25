@@ -24,7 +24,7 @@ public struct MockPrayerTimesProvider: PrayerTimesProvider {
         self.timeZone = timeZone
     }
 
-    public func prayerTimes(near coordinate: Coordinate) async throws -> PrayerTimesResponse {
+    public func prayerTimes(near coordinate: Coordinate, ifChangedSince version: String?) async throws -> PrayerTimesResponse? {
         response(near: coordinate, from: .now, days: 30)
     }
 

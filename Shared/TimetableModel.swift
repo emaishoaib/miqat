@@ -12,7 +12,13 @@ final class TimetableModel {
         case failed(Error)
     }
 
+    nonisolated static var nextDailyRefresh: Date {
+        Calendar.current.nextDate(after: .now, matching: DateComponents(hour: 0, minute: 1), matchingPolicy: .nextTime)
+            ?? .now.addingTimeInterval(24 * 60 * 60)
+    }
+
     private(set) var state: State = .loading
+    private(set) var isRefreshing = false
 
     private let provider: any PrayerTimesProvider
     private let cache: TimetableCache
@@ -23,18 +29,44 @@ final class TimetableModel {
         if let cached = cache.load() {
             state = .loaded(cached)
         }
+        Task { [weak self] in
+            for await _ in NotificationCenter.default.notifications(named: .NSCalendarDayChanged) {
+                await self?.load()
+            }
+        }
     }
 
     func load() async {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
+
         do {
             let coordinate = try await CurrentLocation.coordinate()
-            let response = try await provider.prayerTimes(near: coordinate)
-            cache.save(response)
-            WidgetCenter.shared.reloadAllTimelines()
-            state = .loaded(response)
+            cache.saveCoordinate(coordinate)
+            try await refresh(near: coordinate)
         } catch {
             if case .loaded = state { return }
             state = .failed(error)
         }
+    }
+
+    func refreshInBackground() async {
+        guard let coordinate = cache.loadCoordinate() else { return }
+        try? await refresh(near: coordinate)
+    }
+
+    private func refresh(near coordinate: Coordinate) async throws {
+        guard let response = try await provider.prayerTimes(near: coordinate, ifChangedSince: currentVersion) else {
+            return
+        }
+        cache.save(response)
+        WidgetCenter.shared.reloadAllTimelines()
+        state = .loaded(response)
+    }
+
+    private var currentVersion: String? {
+        guard case .loaded(let response) = state else { return nil }
+        return response.version
     }
 }
