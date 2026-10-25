@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.database import engine
 from app.models import create_tables
-from app.routes import health, prayer_times
+from app.routes import admin, health, prayer_times
 
 
 @asynccontextmanager
@@ -17,3 +17,4 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Miqat", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(prayer_times.router)
+app.include_router(admin.router)

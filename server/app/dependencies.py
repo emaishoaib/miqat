@@ -1,4 +1,5 @@
 import datetime
+import os
 from collections.abc import Iterator
 from functools import cache
 
@@ -26,3 +27,7 @@ def get_time_zone_client() -> TimeZoneClient:
 
 def get_now() -> datetime.datetime:
     return datetime.datetime.now(datetime.UTC)
+
+
+def get_admin_token() -> str | None:
+    return os.environ.get("MIQAT_ADMIN_TOKEN") or None
