@@ -17,7 +17,7 @@ final class TimetableModel {
     private let provider: any PrayerTimesProvider
     private let cache: TimetableCache
 
-    init(provider: any PrayerTimesProvider = MockPrayerTimesProvider(), cache: TimetableCache = .shared) {
+    init(provider: any PrayerTimesProvider = ServerPrayerTimesProvider(), cache: TimetableCache = .shared) {
         self.provider = provider
         self.cache = cache
         if let cached = cache.load() {
@@ -28,7 +28,7 @@ final class TimetableModel {
     func load() async {
         do {
             let coordinate = try await CurrentLocation.coordinate()
-            let response = try await provider.prayerTimes(near: coordinate, from: .now, days: 7)
+            let response = try await provider.prayerTimes(near: coordinate)
             cache.save(response)
             WidgetCenter.shared.reloadAllTimelines()
             state = .loaded(response)

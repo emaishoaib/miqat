@@ -13,7 +13,7 @@ struct PrayerTimesResponseTests {
     }
 
     func response(from start: Date) async throws -> PrayerTimesResponse {
-        try await MockPrayerTimesProvider(timeZone: london).prayerTimes(near: solihull, from: start, days: 2)
+        MockPrayerTimesProvider(timeZone: london).response(near: solihull, from: start, days: 2)
     }
 
     func date(hour: Int, minute: Int, dayOffset: Int = 0) -> Date {

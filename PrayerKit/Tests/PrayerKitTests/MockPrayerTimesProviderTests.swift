@@ -8,7 +8,7 @@ struct MockPrayerTimesProviderTests {
 
     @Test func returnsOneTimetablePerRequestedDay() async throws {
         let provider = MockPrayerTimesProvider(timeZone: london)
-        let response = try await provider.prayerTimes(near: solihull, from: .now, days: 3)
+        let response = provider.response(near: solihull, from: .now, days: 3)
 
         #expect(response.days.count == 3)
     }
@@ -17,7 +17,7 @@ struct MockPrayerTimesProviderTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = london
         let provider = MockPrayerTimesProvider(timeZone: london)
-        let response = try await provider.prayerTimes(near: solihull, from: .now, days: 2)
+        let response = provider.response(near: solihull, from: .now, days: 2)
 
         for day in response.days {
             #expect(day.times.map(\.prayer) == Prayer.allCases)
@@ -28,7 +28,7 @@ struct MockPrayerTimesProviderTests {
 
     @Test func reportsTheSampleMosqueWithItsDistance() async throws {
         let provider = MockPrayerTimesProvider(timeZone: london)
-        let response = try await provider.prayerTimes(near: solihull, from: .now, days: 1)
+        let response = provider.response(near: solihull, from: .now, days: 1)
 
         guard case let .mosque(mosque, distance) = response.source else {
             Issue.record("Expected a mosque source")
