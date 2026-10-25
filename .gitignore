@@ -6,3 +6,7 @@ xcuserdata/
 Miqat.xcodeproj/
 .build/
 .swiftpm/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
