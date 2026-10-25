@@ -14,8 +14,15 @@ public enum CurrentLocationError: LocalizedError {
 }
 
 public enum CurrentLocation {
+    @MainActor
     public static func coordinate() async throws -> Coordinate {
-        #if !os(macOS)
+        #if os(macOS)
+        let manager = CLLocationManager()
+        if manager.authorizationStatus == .notDetermined {
+            manager.requestWhenInUseAuthorization()
+        }
+        defer { withExtendedLifetime(manager) {} }
+        #else
         let session = CLServiceSession(authorization: .whenInUse)
         defer { session.invalidate() }
         #endif
