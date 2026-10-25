@@ -44,7 +44,7 @@ targets:
   Miqat-Widget:
     type: app-extension
     platform: iOS
-    sources: [Widget]
+    sources: [Widget, WidgetShared]
     dependencies:
       - package: PrayerKit
     entitlements:
@@ -86,6 +86,11 @@ targets:
       - Shared/TimetableModel.swift
     dependencies:
       - package: PrayerKit
+      - target: Miqat-WatchWidget
+    entitlements:
+      path: watchOS/Miqat-watchOS.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.mashoaib.miqat]
     settings:
       base:
         PRODUCT_NAME: Miqat
@@ -95,4 +100,25 @@ targets:
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mashoaib.miqat
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Miqat uses your location to find prayer times from the mosques nearest to you.
+        TARGETED_DEVICE_FAMILY: "4"
+
+  Miqat-WatchWidget:
+    type: app-extension
+    platform: watchOS
+    sources: [WatchWidget, WidgetShared]
+    dependencies:
+      - package: PrayerKit
+    entitlements:
+      path: WatchWidget/Miqat-WatchWidget.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.mashoaib.miqat]
+    info:
+      path: WatchWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Miqat
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mashoaib.miqat.watchkitapp.widget
         TARGETED_DEVICE_FAMILY: "4"
