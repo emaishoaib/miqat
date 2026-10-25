@@ -5,6 +5,7 @@ options:
   deploymentTarget:
     iOS: "26.0"
     macOS: "26.0"
+    watchOS: "26.0"
   createIntermediateGroups: true
 
 settings:
@@ -76,3 +77,22 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
         INFOPLIST_KEY_NSLocationUsageDescription: Miqat uses your location to find prayer times from the mosques nearest to you.
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Miqat uses your location to find prayer times from the mosques nearest to you.
+
+  Miqat-watchOS:
+    type: application
+    platform: watchOS
+    sources:
+      - watchOS
+      - Shared/TimetableModel.swift
+    dependencies:
+      - package: PrayerKit
+    settings:
+      base:
+        PRODUCT_NAME: Miqat
+        PRODUCT_BUNDLE_IDENTIFIER: com.mashoaib.miqat.watchkitapp
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Miqat
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mashoaib.miqat
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Miqat uses your location to find prayer times from the mosques nearest to you.
+        TARGETED_DEVICE_FAMILY: "4"
