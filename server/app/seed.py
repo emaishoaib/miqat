@@ -2,8 +2,8 @@ import datetime
 
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal, engine
-from app.models import Mosque, Prayer, create_tables
+from app.database import SessionLocal
+from app.models import Mosque, Prayer
 from app.timetables import DayTimes, save_timetable
 
 EXAMPLE_MOSQUE_ID = "example-masjid"
@@ -42,6 +42,5 @@ def seed(session: Session, start: datetime.date, days: int = 30) -> Mosque:
 
 
 if __name__ == "__main__":
-    create_tables(engine)
     with SessionLocal.begin() as session:
         seed(session, datetime.date.today())

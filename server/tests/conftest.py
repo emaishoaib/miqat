@@ -1,6 +1,8 @@
 import os
+from pathlib import Path
 
 import pytest
+from alembic.config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -26,3 +28,10 @@ def session(engine):
     create_tables(engine)
     with Session(engine) as session:
         yield session
+
+
+@pytest.fixture
+def alembic_config():
+    config = Config(str(Path(__file__).parent.parent / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
+    return config
