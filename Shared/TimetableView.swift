@@ -94,25 +94,23 @@ private struct NextPrayerCard: View {
     let time: PrayerTime
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Next prayer")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline) {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Next prayer")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Text(time.prayer.name)
                     .font(.largeTitle.bold())
-                Spacer()
-                Text(time.begins, style: .relative)
-                    .font(.headline)
-                    .monospacedDigit()
-            }
-            Text("Begins at \(time.begins.formatted(date: .omitted, time: .shortened))")
-                .font(.subheadline)
-            if let jamaat = time.jamaat {
-                Text("Jamaat at \(jamaat.formatted(date: .omitted, time: .shortened))")
+                Text("Begins at \(time.begins.formatted(date: .omitted, time: .shortened))")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if let jamaat = time.jamaat {
+                    Text("Jamaat at \(jamaat.formatted(date: .omitted, time: .shortened))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
+            Spacer()
+            CountdownDial(target: time.begins)
         }
         .padding(.vertical, 4)
     }
