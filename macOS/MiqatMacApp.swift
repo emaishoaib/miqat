@@ -3,11 +3,12 @@ import SwiftUI
 @main
 struct MiqatMacApp: App {
     @State private var model: TimetableModel
-    @State private var clock = MinuteClock()
+    @State private var status: MenuBarStatus
 
     init() {
         let model = TimetableModel()
         _model = State(initialValue: model)
+        _status = State(initialValue: MenuBarStatus(model: model))
         Task { await model.load() }
     }
 
@@ -21,8 +22,9 @@ struct MiqatMacApp: App {
         MenuBarExtra {
             TimetableScreen(model: model)
                 .frame(width: 340, height: 560)
+                .onAppear { status.acknowledge() }
         } label: {
-            MenuBarLabel(model: model, clock: clock)
+            MenuBarLabel(status: status)
         }
         .menuBarExtraStyle(.window)
     }
