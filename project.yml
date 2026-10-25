@@ -80,6 +80,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Miqat
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
+        INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_NSLocationUsageDescription: Miqat uses your location to find prayer times from the mosques nearest to you.
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Miqat uses your location to find prayer times from the mosques nearest to you.
 

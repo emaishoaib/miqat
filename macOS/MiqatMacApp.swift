@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @main
@@ -13,16 +14,19 @@ struct MiqatMacApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Miqat") {
-            TimetableScreen(model: model)
-                .frame(minWidth: 360, minHeight: 560)
-        }
-        .windowResizability(.contentMinSize)
-
         MenuBarExtra {
-            TimetableScreen(model: model)
-                .frame(width: 340, height: 560)
-                .onAppear { status.acknowledge() }
+            VStack(spacing: 0) {
+                TimetableScreen(model: model)
+                Divider()
+                HStack {
+                    Spacer()
+                    Button("Quit Miqat") { NSApplication.shared.terminate(nil) }
+                        .keyboardShortcut("q")
+                }
+                .padding(10)
+            }
+            .frame(width: 340, height: 600)
+            .onAppear { status.acknowledge() }
         } label: {
             MenuBarLabel(status: status)
         }
