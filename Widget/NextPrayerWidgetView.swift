@@ -13,7 +13,7 @@ struct NextPrayerWidgetView: View {
             case .systemMedium:
                 MediumView(next: next, day: response.day(containing: entry.date), date: entry.date)
             case .accessoryRectangular:
-                RectangularView(next: next)
+                RectangularView(next: next, date: entry.date)
             case .accessoryInline:
                 Text("\(next.prayer.name) \(next.begins.formatted(date: .omitted, time: .shortened))")
             default:
@@ -83,15 +83,48 @@ private struct MediumView: View {
 
 private struct RectangularView: View {
     let next: PrayerTime
+    let date: Date
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text(next.prayer.name)
-                .font(.headline)
-            Text(next.begins.formatted(date: .omitted, time: .shortened))
-            Text(next.begins, style: .relative)
-                .foregroundStyle(.secondary)
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(next.prayer.name)
+                    .font(.headline)
+                Text(next.begins.formatted(date: .omitted, time: .shortened))
+                    .font(.caption)
+                Text(next.begins, style: .relative)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Rectangle()
+                .frame(width: 1)
+                .opacity(0.4)
+                .padding(.vertical, 6)
+
+            VStack(spacing: 2) {
+                Text(HijriDate.month(date))
+                    .font(.caption.weight(.semibold))
+                    .textCase(.uppercase)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .allowsTightening(true)
+                Text(HijriDate.day(date))
+                    .font(.headline.bold())
+                    .monospacedDigit()
+                    .lineLimit(1)
+                Text(verbatim: "\(HijriDate.monthNumber(date)) · \(HijriDate.year(date))")
+                    .font(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(.vertical, 4)
+            .frame(width: 64)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
