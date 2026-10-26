@@ -3,8 +3,10 @@ resource "google_project_service" "enabled" {
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "places.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
+    "timezone-backend.googleapis.com",
   ])
 
   service            = each.key
