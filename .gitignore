@@ -16,3 +16,4 @@ infra/backend.hcl
 *.tfstate.*
 *.tfvars
 crash.log
+Config/Release.xcconfig

@@ -8,11 +8,20 @@ options:
     watchOS: "26.0"
   createIntermediateGroups: true
 
+configFiles:
+  Release: Config/Release.xcconfig
+
 settings:
   base:
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+  configs:
+    Debug:
+      MIQAT_SERVER_SCHEME: http
+      MIQAT_SERVER_HOST: localhost:8000
+    Release:
+      MIQAT_SERVER_SCHEME: https
 
 packages:
   PrayerKit:
@@ -35,6 +44,7 @@ targets:
       properties:
         UIBackgroundModes: [fetch]
         BGTaskSchedulerPermittedIdentifiers: [com.mashoaib.miqat.daily-refresh]
+        MiqatServerURL: $(MIQAT_SERVER_SCHEME)://$(MIQAT_SERVER_HOST)
     settings:
       base:
         PRODUCT_NAME: Miqat
@@ -73,6 +83,10 @@ targets:
     sources: [macOS, Shared]
     dependencies:
       - package: PrayerKit
+    info:
+      path: macOS/Info.plist
+      properties:
+        MiqatServerURL: $(MIQAT_SERVER_SCHEME)://$(MIQAT_SERVER_HOST)
     settings:
       base:
         PRODUCT_NAME: Miqat
@@ -97,6 +111,10 @@ targets:
       path: watchOS/Miqat-watchOS.entitlements
       properties:
         com.apple.security.application-groups: [group.com.mashoaib.miqat]
+    info:
+      path: watchOS/Info.plist
+      properties:
+        MiqatServerURL: $(MIQAT_SERVER_SCHEME)://$(MIQAT_SERVER_HOST)
     settings:
       base:
         PRODUCT_NAME: Miqat

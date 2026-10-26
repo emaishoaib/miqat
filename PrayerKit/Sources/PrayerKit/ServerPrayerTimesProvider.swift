@@ -15,10 +15,15 @@ public enum PrayerTimesError: LocalizedError, Equatable {
 public struct ServerPrayerTimesProvider: PrayerTimesProvider {
     public static let localServer = URL(string: "http://localhost:8000")!
 
+    public static var configuredServer: URL {
+        (Bundle.main.object(forInfoDictionaryKey: "MiqatServerURL") as? String)
+            .flatMap(URL.init(string:)) ?? localServer
+    }
+
     private let baseURL: URL
     private let session: URLSession
 
-    public init(baseURL: URL = Self.localServer, session: URLSession = .shared) {
+    public init(baseURL: URL = Self.configuredServer, session: URLSession = .shared) {
         self.baseURL = baseURL
         self.session = session
     }
