@@ -1,2 +1,3 @@
-project_id = "your-google-cloud-project-id"
-image      = "europe-central2-docker.pkg.dev/your-project/cloud-run-source-deploy/miqat@sha256:..."
+project_id      = "your-google-cloud-project-id"
+image           = "europe-central2-docker.pkg.dev/your-project/cloud-run-source-deploy/miqat@sha256:..."
+neon_project_id = "your-neon-project-id"

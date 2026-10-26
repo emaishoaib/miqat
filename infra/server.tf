@@ -44,7 +44,10 @@ resource "google_cloud_run_v2_service" "server" {
     ignore_changes = [client, client_version]
   }
 
-  depends_on = [google_secret_manager_secret_iam_member.server]
+  depends_on = [
+    google_secret_manager_secret_version.database_url,
+    google_secret_manager_secret_iam_member.server,
+  ]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public" {

@@ -7,3 +7,8 @@ import {
   to = google_artifact_registry_repository.images
   id = "projects/${var.project_id}/locations/${var.region}/repositories/cloud-run-source-deploy"
 }
+
+import {
+  to = neon_project.database
+  id = var.neon_project_id
+}

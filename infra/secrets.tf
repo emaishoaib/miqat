@@ -15,3 +15,8 @@ resource "google_secret_manager_secret_iam_member" "server" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${local.default_service_account}"
 }
+
+resource "google_secret_manager_secret_version" "database_url" {
+  secret      = google_secret_manager_secret.server["database-url"].id
+  secret_data = neon_project.database.connection_uri_pooler
+}
