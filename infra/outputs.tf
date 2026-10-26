@@ -17,3 +17,8 @@ output "image_repository" {
   description = "Where the server's images are stored."
   value       = google_artifact_registry_repository.images.registry_uri
 }
+
+output "public_url" {
+  description = "The address the apps use to reach the server."
+  value       = "https://${cloudflare_workers_custom_domain.server.hostname}"
+}
