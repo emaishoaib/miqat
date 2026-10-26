@@ -8,3 +8,8 @@ variable "region" {
   type        = string
   default     = "europe-central2"
 }
+
+variable "image" {
+  description = "The container image the server runs."
+  type        = string
+}
