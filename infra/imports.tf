@@ -12,3 +12,8 @@ import {
   to = neon_project.database
   id = var.neon_project_id
 }
+
+import {
+  to = cloudflare_zone.domain
+  id = var.cloudflare_zone_id
+}

@@ -18,3 +18,18 @@ variable "neon_project_id" {
   description = "The ID of the Neon project that holds the database."
   type        = string
 }
+
+variable "cloudflare_account_id" {
+  description = "The Cloudflare account that holds the domain."
+  type        = string
+}
+
+variable "cloudflare_zone_id" {
+  description = "The Cloudflare zone ID of the domain."
+  type        = string
+}
+
+variable "domain" {
+  description = "The domain the server is reached through."
+  type        = string
+}

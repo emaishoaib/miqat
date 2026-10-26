@@ -10,6 +10,10 @@ terraform {
       source  = "kislerdm/neon"
       version = ">= 0.6"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = ">= 5.0"
+    }
   }
 
   backend "gcs" {
