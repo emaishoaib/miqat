@@ -13,16 +13,16 @@ struct TimesExplanationView: View {
                 switch source {
                 case .mosque(let mosque, let distance):
                     Paragraph(
-                        title: "From \(mosque.name)",
-                        text: "These are the times the mosque publishes in its own timetable. Miqat shows them as they are, without calculating anything."
+                        title: "From \(mosque.name)'s timetable",
+                        text: "These times are taken from the timetable the mosque makes public and added to Miqat as they are, without calculating anything. Miqat isn't connected with the mosque."
                     )
                     Paragraph(
                         title: "Why this mosque",
-                        text: "It's the nearest mosque to you with a timetable in Miqat, \(Measurement(value: distance, unit: UnitLength.meters).formatted(.measurement(width: .wide, usage: .road))) away. Miqat checks the 20 closest mosques within 50 km and picks the first one that has times."
+                        text: "It's the nearest mosque to you whose timetable is in Miqat, \(Measurement(value: distance, unit: UnitLength.meters).formatted(.measurement(width: .wide, usage: .road))) away. Miqat checks the 20 closest mosques within 50 km and uses the first one that has times."
                     )
                     Paragraph(
                         title: "Jamaat",
-                        text: "Jamaat times are when the mosque holds the congregational prayer. They appear whenever the mosque publishes them."
+                        text: "Jamaat times show when the mosque holds the congregational prayer, wherever its timetable lists them."
                     )
                 case .city(let name, let method, let asrSchool):
                     Paragraph(
