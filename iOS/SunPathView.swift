@@ -24,6 +24,8 @@ struct SunPathView: View {
     @State private var dayOffset = 0
     @State private var pulseStart: Date?
     @State private var pulseEnd: Date?
+    @State private var systemIsDark = Self.systemIsDark()
+    @AppStorage(Appearance.key) private var appearance = Appearance.sun
 
     var body: some View {
         let path = response.sunPath(on: now)
@@ -41,7 +43,7 @@ struct SunPathView: View {
                 if let path, let next, let today {
                     TimelineView(.animation(paused: pulseStart == nil)) { timeline in
                         KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
-                            SunPathDial(day: today, path: path, next: next, now: now, launch: launch, pulse: pulse(at: timeline.date), ripple: ripple, rippleAt: rippleAt)
+                            SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: usesDayColours(on: path), launch: launch, pulse: pulse(at: timeline.date), ripple: ripple, rippleAt: rippleAt)
                         } keyframes: { _ in
                             MoveKeyframe(0)
                             LinearKeyframe(1, duration: 0.9)
@@ -93,13 +95,31 @@ struct SunPathView: View {
             dayOffset = 0
         }
         .background {
-            (isDay(on: path) ? Palette.day : Palette.night)
+            (usesDayColours(on: path) ? Palette.day : Palette.night)
                 .ignoresSafeArea()
-                .animation(.easeInOut(duration: 1.2), value: isDay(on: path))
+                .animation(.easeInOut(duration: 1.2), value: usesDayColours(on: path))
         }
         .foregroundStyle(Palette.ink)
         .tint(Palette.ink)
         .preferredColorScheme(.dark)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            systemIsDark = Self.systemIsDark()
+        }
+    }
+
+    private func usesDayColours(on path: SunPath?) -> Bool {
+        switch appearance {
+        case .sun: isDay(on: path)
+        case .system: !systemIsDark
+        case .day: true
+        case .night: false
+        }
+    }
+
+    private static func systemIsDark() -> Bool {
+        UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.screen.traitCollection.userInterfaceStyle }
+            .first == .dark
     }
 
     private func isDay(on path: SunPath?) -> Bool {
@@ -231,6 +251,7 @@ private struct SunPathDial: View {
     @AnimatableIgnored var path: SunPath
     @AnimatableIgnored var next: PrayerTime
     @AnimatableIgnored var now: Date
+    @AnimatableIgnored var usesDayColours: Bool
     var launch: Double
     @AnimatableIgnored var pulse: Double
     @AnimatableIgnored var ripple: Double
@@ -300,7 +321,7 @@ private struct SunPathDial: View {
             let label = context.resolve(Text("Next prayer").font(.caption).foregroundStyle(Palette.ink.opacity(0.7)))
             let name = context.resolve(Text(next.prayer.name).font(.title.weight(.semibold)).foregroundStyle(Palette.ink))
             let isSoon = PrayerUrgency(timeUntilNext: next.begins.timeIntervalSince(now)) != .normal
-            let countdownColor = isSoon ? (isDay ? Palette.dayRed : Palette.nightRed) : Palette.gold
+            let countdownColor = isSoon ? (usesDayColours ? Palette.dayRed : Palette.nightRed) : Palette.gold
             let countdown = context.resolve(Text(Self.countdown(to: next.begins, from: now)).font(.headline).foregroundStyle(countdownColor))
             let time = context.resolve(Text("at \(next.begins.formatted(date: .omitted, time: .shortened))").font(.subheadline).foregroundStyle(Palette.ink.opacity(0.7)))
             let nameHeight = name.measure(in: size).height

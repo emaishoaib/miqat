@@ -2,6 +2,24 @@ import AVFoundation
 import PrayerKit
 import SwiftUI
 
+enum Appearance: String, CaseIterable {
+    static let key = "appearance"
+
+    case sun
+    case system
+    case day
+    case night
+
+    var name: String {
+        switch self {
+        case .sun: "Follow the sun"
+        case .system: "Match the system"
+        case .day: "Always day"
+        case .night: "Always night"
+        }
+    }
+}
+
 enum NotificationSettings {
     static let reminderKey = "reminderMinutes"
     static let reminderOptions = [0, 5, 10, 15, 20, 30]
@@ -56,6 +74,9 @@ private struct SettingsView: View {
                 Section {
                     ReminderPicker()
                     SoundPicker()
+                }
+                Section {
+                    AppearancePicker()
                 }
                 Section {
                     LabeledContent("Version", value: "\(Self.info("CFBundleShortVersionString")) (\(Self.info("CFBundleVersion")))")
@@ -146,5 +167,18 @@ private struct SoundPicker: View {
             .flatMap { Bundle.main.url(forResource: $0, withExtension: nil) }
             .flatMap { try? AVAudioPlayer(contentsOf: $0) }
         player?.play()
+    }
+}
+
+private struct AppearancePicker: View {
+    @AppStorage(Appearance.key) private var appearance = Appearance.sun
+
+    var body: some View {
+        Picker("Appearance", selection: $appearance) {
+            ForEach(Appearance.allCases, id: \.self) { option in
+                Text(option.name)
+                    .tag(option)
+            }
+        }
     }
 }
