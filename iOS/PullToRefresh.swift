@@ -3,6 +3,8 @@ import SwiftUI
 struct PullToRefresh: ViewModifier {
     static let threshold: CGFloat = 80
 
+    let action: () async -> Void
+
     @State private var pullDistance: CGFloat = 0
 
     private var isPastThreshold: Bool {
@@ -16,6 +18,13 @@ struct PullToRefresh: ViewModifier {
             } action: { _, distance in
                 pullDistance = distance
             }
+            .gesture(
+                ReleaseRecognizer {
+                    if isPastThreshold {
+                        Task { await action() }
+                    }
+                }
+            )
             .overlay(alignment: .top) {
                 Text(isPastThreshold ? "Release to update" : "Pull to update")
                     .font(.subheadline)
@@ -30,8 +39,37 @@ struct PullToRefresh: ViewModifier {
     }
 }
 
+private struct ReleaseRecognizer: UIGestureRecognizerRepresentable {
+    let onRelease: () -> Void
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let recognizer = UIPanGestureRecognizer()
+        recognizer.delegate = context.coordinator
+        return recognizer
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        if recognizer.state == .ended {
+            onRelease()
+        }
+    }
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+    }
+}
+
 extension View {
-    func pullToRefresh() -> some View {
-        modifier(PullToRefresh())
+    func pullToRefresh(_ action: @escaping () async -> Void) -> some View {
+        modifier(PullToRefresh(action: action))
     }
 }

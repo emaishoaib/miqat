@@ -40,7 +40,7 @@ struct TimetableView: View {
             }
         }
         #if os(iOS)
-        .pullToRefresh()
+        .pullToRefresh { await refresh() }
         #else
         .refreshable { await refresh() }
         #endif
