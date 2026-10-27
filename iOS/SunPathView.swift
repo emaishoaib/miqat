@@ -33,7 +33,9 @@ struct SunPathView: View {
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, source: response.source)
+                Header(date: shown?.date ?? now, source: response.source) {
+                    await refreshWithPulse()
+                }
                 if let path, let next, let today {
                     TimelineView(.animation(paused: pulseStart == nil)) { timeline in
                         KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
@@ -78,9 +80,7 @@ struct SunPathView: View {
             .padding(.vertical, 12)
         }
         .pullToRefresh {
-            startPulse()
-            await refresh()
-            finishPulse()
+            await refreshWithPulse()
         }
         .onChange(of: next?.begins) { began, _ in
             if let began, began <= now {
@@ -116,6 +116,12 @@ struct SunPathView: View {
         guard let pulseStart else { return 0 }
         if let pulseEnd, date >= pulseEnd { return 0 }
         return (date.timeIntervalSince(pulseStart) / Self.pulseCycle).truncatingRemainder(dividingBy: 1)
+    }
+
+    private func refreshWithPulse() async {
+        startPulse()
+        await refresh()
+        finishPulse()
     }
 
     private func startPulse() {
@@ -166,6 +172,7 @@ private struct DayChevron: View {
 private struct Header: View {
     let date: Date
     let source: TimesSource
+    let refresh: () async -> Void
 
     @State private var explainsTimes = false
 
@@ -193,8 +200,19 @@ private struct Header: View {
                 }
             }
             Spacer()
-            SettingsButton()
-                .font(.title3)
+            HStack(spacing: 22) {
+                Button {
+                    Task {
+                        await refresh()
+                    }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Refresh prayer times")
+                SettingsButton()
+            }
+            .font(.title3)
         }
     }
 }
