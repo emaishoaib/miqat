@@ -15,8 +15,19 @@ It prints the server's reply as JSON. It exits with status 1 and prints the serv
 
 ## Before running anything
 
-- `MIQAT_ADMIN_TOKEN` must be set in the environment. If it is missing, ask the user to set it in their shell. Never ask them to paste the token into the conversation, and never write it into a file.
-- `MIQAT_SERVER_URL` picks the server. It defaults to `http://localhost:8000`. For the local server, Postgres must be running (`docker compose up -d` in `server/`) and the server started.
+By default, commands go to the deployed server. Run each one like this, from `server/`:
+
+```bash
+MIQAT_SERVER_URL="https://$(sed -n 's/^MIQAT_SERVER_HOST *= *//p' ../Config/Release.xcconfig)" \
+MIQAT_ADMIN_TOKEN="$(gcloud secrets versions access latest --secret admin-token)" \
+uv run python -m app.cli <command> ...
+```
+
+- The domain comes from `Config/Release.xcconfig`, which is not committed. Never write the domain into this repo.
+- The token comes from Google Secret Manager through the user's `gcloud` sign-in. Never print it, ask for it in the conversation, or write it into a file.
+- If either lookup fails, tell the user which one and stop. `gcloud` may need signing in, or pointing at the right project.
+
+Only when the user asks for their local server, use `MIQAT_SERVER_URL=http://localhost:8000` instead. Postgres must be running (`docker compose up -d` in `server/`), and the server started with a token the user tells you how to supply.
 
 ## Commands
 
