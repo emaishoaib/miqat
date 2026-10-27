@@ -24,15 +24,22 @@ struct TimesExplanationView: View {
                         title: "Jamaat",
                         text: "Jamaat times are when the mosque holds the congregational prayer. They appear whenever the mosque publishes them."
                     )
-                case .city(let name):
+                case .city(let name, let method, let asrSchool):
                     Paragraph(
                         title: "Calculated for \(name)",
                         text: "None of the mosques near you has a timetable in Miqat yet, so the times are calculated for your city from the position of the sun."
                     )
-                    Paragraph(
-                        title: "The method",
-                        text: "The calculation follows the method most used in your country, and Asr follows the school of law most common there."
-                    )
+                    if let method, let asrSchool {
+                        Paragraph(
+                            title: "The method",
+                            text: "The calculation follows the \(method) method, the one most used in your country. Asr follows the \(asrSchool) school, the most common there."
+                        )
+                    } else {
+                        Paragraph(
+                            title: "The method",
+                            text: "The calculation follows the method most used in your country, and Asr follows the school of law most common there."
+                        )
+                    }
                 }
 
                 Paragraph(

@@ -70,6 +70,8 @@ private struct ServerTimetable: Decodable {
     struct City: Decodable {
         let id: String
         let name: String
+        let method: String?
+        let asrSchool: String?
     }
 
     struct Day: Decodable {
@@ -116,7 +118,7 @@ private struct ServerTimetable: Decodable {
             )
         }
         if let city {
-            return .city(name: city.name)
+            return .city(name: city.name, method: city.method, asrSchool: city.asrSchool)
         }
         throw DecodingError.dataCorrupted(
             DecodingError.Context(codingPath: [], debugDescription: "The timetable has neither a mosque nor a city.")

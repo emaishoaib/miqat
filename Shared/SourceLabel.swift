@@ -13,7 +13,7 @@ struct SourceLabel: View {
             } icon: {
                 Image(systemName: "building.columns")
             }
-        case .city(let name):
+        case .city(let name, _, _):
             Label(name, systemImage: "mappin.and.ellipse")
         }
     }

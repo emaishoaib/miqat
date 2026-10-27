@@ -81,6 +81,22 @@ struct ServerPrayerTimesProviderTests {
         #expect(response.days.first?.times.first?.jamaat == nil)
     }
 
+    @Test func readsHowTheCityTimesAreCalculated() throws {
+        let cityBody = Data("""
+        {
+          "version": "place-solihull:1",
+          "mosque": null,
+          "city": {"id": "place-solihull", "name": "Solihull", "method": "Moonsighting Committee Worldwide", "asr_school": "Hanafi"},
+          "time_zone": "Europe/London",
+          "days": []
+        }
+        """.utf8)
+
+        let response = try #require(try ServerPrayerTimesProvider.response(from: cityBody, statusCode: 200))
+
+        #expect(response.source == .city(name: "Solihull", method: "Moonsighting Committee Worldwide", asrSchool: "Hanafi"))
+    }
+
     @Test func reportsUnavailableWhenTheServerHasNoTimes() {
         #expect(throws: PrayerTimesError.unavailable) {
             try ServerPrayerTimesProvider.response(from: Data(), statusCode: 404)
