@@ -14,7 +14,7 @@ struct TimetableScreen: View {
         case .loaded(let response):
             TimelineView(.everyMinute) { context in
                 #if os(iOS)
-                SunPathView(response: response, now: context.date, isRefreshing: model.isRefreshing) {
+                SunPathView(response: response, now: context.date) {
                     await model.load()
                 }
                 #else

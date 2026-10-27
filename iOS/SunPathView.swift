@@ -10,19 +10,18 @@ enum Palette {
 
 struct SunPathView: View {
     private static let margin: CGFloat = 20
-    private static let lap: TimeInterval = 1.2
+    private static let pulseCycle: TimeInterval = 1.0
 
     let response: PrayerTimesResponse
     let now: Date
-    let isRefreshing: Bool
     let refresh: () async -> Void
 
     @State private var contentWidth: CGFloat = 0
     @State private var launch: Double = 0
     @State private var rippleAt: Date?
     @State private var dayOffset = 0
-    @State private var lapStart: Date?
-    @State private var lapEnd: Date?
+    @State private var pulseStart: Date?
+    @State private var pulseEnd: Date?
 
     var body: some View {
         let path = response.sunPath(on: now)
@@ -36,9 +35,9 @@ struct SunPathView: View {
             VStack(spacing: 28) {
                 Header(date: shown?.date ?? now, source: response.source)
                 if let path, let next, let today {
-                    TimelineView(.animation(paused: lapStart == nil)) { timeline in
+                    TimelineView(.animation(paused: pulseStart == nil)) { timeline in
                         KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
-                            SunPathDial(day: today, path: path, next: next, now: now, launch: launch, spin: spin(at: timeline.date), ripple: ripple, rippleAt: rippleAt)
+                            SunPathDial(day: today, path: path, next: next, now: now, launch: launch, pulse: pulse(at: timeline.date), ripple: ripple, rippleAt: rippleAt)
                         } keyframes: { _ in
                             MoveKeyframe(0)
                             LinearKeyframe(1, duration: 0.9)
@@ -78,7 +77,11 @@ struct SunPathView: View {
             .padding(.horizontal, Self.margin)
             .padding(.vertical, 12)
         }
-        .pullToRefresh { await refresh() }
+        .pullToRefresh {
+            startPulse()
+            await refresh()
+            finishPulse()
+        }
         .onChange(of: next?.begins) { began, _ in
             if let began, began <= now {
                 rippleAt = began
@@ -86,9 +89,6 @@ struct SunPathView: View {
         }
         .onChange(of: listed?.date) {
             dayOffset = 0
-        }
-        .onChange(of: isRefreshing, initial: true) { _, refreshing in
-            refreshing ? startLap() : finishLap()
         }
         .background {
             (isDay(on: path) ? Palette.day : Palette.night)
@@ -112,29 +112,29 @@ struct SunPathView: View {
         }
     }
 
-    private func spin(at date: Date) -> Double {
-        guard let lapStart else { return 0 }
-        if let lapEnd, date >= lapEnd { return 0 }
-        return (date.timeIntervalSince(lapStart) / Self.lap).truncatingRemainder(dividingBy: 1)
+    private func pulse(at date: Date) -> Double {
+        guard let pulseStart else { return 0 }
+        if let pulseEnd, date >= pulseEnd { return 0 }
+        return (date.timeIntervalSince(pulseStart) / Self.pulseCycle).truncatingRemainder(dividingBy: 1)
     }
 
-    private func startLap() {
-        lapEnd = nil
-        if lapStart == nil {
-            lapStart = .now
+    private func startPulse() {
+        pulseEnd = nil
+        if pulseStart == nil {
+            pulseStart = .now
         }
     }
 
-    private func finishLap() {
-        guard let lapStart else { return }
-        let laps = max(1, (Date.now.timeIntervalSince(lapStart) / Self.lap).rounded(.up))
-        let end = lapStart.addingTimeInterval(laps * Self.lap)
-        lapEnd = end
+    private func finishPulse() {
+        guard let pulseStart else { return }
+        let beats = max(1, (Date.now.timeIntervalSince(pulseStart) / Self.pulseCycle).rounded(.up))
+        let end = pulseStart.addingTimeInterval(beats * Self.pulseCycle)
+        pulseEnd = end
         Task {
             try? await Task.sleep(for: .seconds(end.timeIntervalSinceNow))
-            if lapEnd == end {
-                self.lapStart = nil
-                lapEnd = nil
+            if pulseEnd == end {
+                self.pulseStart = nil
+                pulseEnd = nil
             }
         }
     }
@@ -212,7 +212,7 @@ private struct SunPathDial: View {
     @AnimatableIgnored var next: PrayerTime
     @AnimatableIgnored var now: Date
     var launch: Double
-    @AnimatableIgnored var spin: Double
+    @AnimatableIgnored var pulse: Double
     @AnimatableIgnored var ripple: Double
     @AnimatableIgnored var rippleAt: Date?
 
@@ -263,7 +263,7 @@ private struct SunPathDial: View {
 
             let isDay = now >= path.sunrise && now < path.maghrib
             context.fill(
-                Path(ellipseIn: circle(around: point(at: sunAngle - 360 * spin), radius: 13, scale: scale)),
+                Path(ellipseIn: circle(around: point(at: sunAngle), radius: 13 + 3 * (1 - cos(2 * .pi * pulse)) / 2, scale: scale)),
                 with: .color(isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device))
             )
 
