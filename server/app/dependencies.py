@@ -5,7 +5,9 @@ from functools import cache
 
 from sqlalchemy.orm import Session
 
+from app.aladhan import AlAdhanClient
 from app.database import SessionLocal
+from app.geocoding import GeocodingClient, geocoding_client_from_environment
 from app.places import PlacesClient, places_client_from_environment
 from app.time_zones import TimeZoneClient, time_zone_client_from_environment
 
@@ -23,6 +25,16 @@ def get_places_client() -> PlacesClient:
 @cache
 def get_time_zone_client() -> TimeZoneClient:
     return time_zone_client_from_environment()
+
+
+@cache
+def get_geocoding_client() -> GeocodingClient:
+    return geocoding_client_from_environment()
+
+
+@cache
+def get_aladhan_client() -> AlAdhanClient:
+    return AlAdhanClient()
 
 
 def get_now() -> datetime.datetime:

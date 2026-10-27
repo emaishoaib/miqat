@@ -14,6 +14,11 @@ class MosqueOut(BaseModel):
     distance_meters: float
 
 
+class CityOut(BaseModel):
+    id: str
+    name: str
+
+
 class PrayerTimeOut(BaseModel):
     prayer: Prayer
     begins: datetime.datetime
@@ -27,6 +32,7 @@ class DayOut(BaseModel):
 
 class TimetableOut(BaseModel):
     version: str
-    mosque: MosqueOut
+    mosque: MosqueOut | None = None
+    city: CityOut | None = None
     time_zone: str
     days: list[DayOut]
