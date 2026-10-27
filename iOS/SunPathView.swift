@@ -44,7 +44,7 @@ struct SunPathView: View {
                         }
                     }
                     .onAppear {
-                        withAnimation(.easeOut(duration: 1.3)) {
+                        withAnimation(.linear(duration: 1.4)) {
                             launch = 1
                         }
                     }
@@ -226,16 +226,22 @@ private struct SunPathDial: View {
                 style: StrokeStyle(lineWidth: 2 * scale, dash: [3 * scale, 6 * scale])
             )
 
-            let sunAngle = 180 - Self.travel(from: 180, to: path.angle(at: now)) * launch
-            var remaining = Path()
-            remaining.addArc(
-                center: CGPoint(x: Self.center.x * scale, y: Self.center.y * scale),
-                radius: Self.radius * scale,
-                startAngle: .degrees(-sunAngle),
-                endAngle: .degrees(-sunAngle + Self.travel(from: sunAngle, to: path.angle(at: next.begins))),
-                clockwise: false
-            )
-            context.stroke(remaining, with: .color(Palette.gold), style: StrokeStyle(lineWidth: 3 * scale, lineCap: .round))
+            let sunAngle = path.angle(at: now)
+            let sunGrowth = Self.ease(Self.phase(of: launch, from: 0, to: 0.35))
+            let arcGrowth = Self.ease(Self.phase(of: launch, from: 0.3, to: 0.85))
+            let ringGrowth = Self.overshoot(Self.phase(of: launch, from: 0.82, to: 1))
+
+            if arcGrowth > 0 {
+                var remaining = Path()
+                remaining.addArc(
+                    center: CGPoint(x: Self.center.x * scale, y: Self.center.y * scale),
+                    radius: Self.radius * scale,
+                    startAngle: .degrees(-sunAngle),
+                    endAngle: .degrees(-sunAngle + Self.travel(from: sunAngle, to: path.angle(at: next.begins)) * arcGrowth),
+                    clockwise: false
+                )
+                context.stroke(remaining, with: .color(Palette.gold), style: StrokeStyle(lineWidth: 3 * scale, lineCap: .round))
+            }
 
             var horizon = Path()
             horizon.move(to: CGPoint(x: Self.horizonInset * scale, y: Self.center.y * scale))
@@ -247,11 +253,13 @@ private struct SunPathDial: View {
                 context.fill(Path(ellipseIn: dot), with: .color(Palette.ink.opacity(time.begins <= now ? 0.4 : 1)))
             }
 
-            context.stroke(
-                Path(ellipseIn: circle(around: point(at: path.angle(at: next.begins)), radius: 10, scale: scale)),
-                with: .color(Palette.gold),
-                lineWidth: 2 * scale
-            )
+            if ringGrowth > 0 {
+                context.stroke(
+                    Path(ellipseIn: circle(around: point(at: path.angle(at: next.begins)), radius: 10 * ringGrowth, scale: scale)),
+                    with: .color(Palette.gold),
+                    lineWidth: 2 * scale
+                )
+            }
 
             if let rippleAt, ripple < 1 {
                 context.stroke(
@@ -263,8 +271,8 @@ private struct SunPathDial: View {
 
             let isDay = now >= path.sunrise && now < path.maghrib
             context.fill(
-                Path(ellipseIn: circle(around: point(at: sunAngle), radius: 13 + 3 * (1 - cos(2 * .pi * pulse)) / 2, scale: scale)),
-                with: .color(isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device))
+                Path(ellipseIn: circle(around: point(at: sunAngle), radius: (13 + 3 * (1 - cos(2 * .pi * pulse)) / 2) * sunGrowth, scale: scale)),
+                with: .color((isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device)).opacity(sunGrowth))
             )
 
             let x = Self.center.x * scale
@@ -291,6 +299,19 @@ private struct SunPathDial: View {
     private static func travel(from start: Double, to end: Double) -> Double {
         let degrees = (start - end).truncatingRemainder(dividingBy: 360)
         return degrees < 0 ? degrees + 360 : degrees
+    }
+
+    private static func phase(of progress: Double, from start: Double, to end: Double) -> Double {
+        min(max((progress - start) / (end - start), 0), 1)
+    }
+
+    private static func ease(_ t: Double) -> Double {
+        t * t * (3 - 2 * t)
+    }
+
+    private static func overshoot(_ t: Double) -> Double {
+        let back = 1.70158
+        return t == 0 ? 0 : 1 + (back + 1) * pow(t - 1, 3) + back * pow(t - 1, 2)
     }
 
     private func circle(around center: CGPoint, radius: CGFloat, scale: CGFloat) -> CGRect {
