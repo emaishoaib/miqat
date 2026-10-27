@@ -15,6 +15,8 @@ struct SunPathView: View {
     let refresh: () async -> Void
 
     @State private var contentWidth: CGFloat = 0
+    @State private var launch: Double = 0
+    @State private var rippleAt: Date?
 
     var body: some View {
         let path = response.sunPath(on: now)
@@ -25,7 +27,17 @@ struct SunPathView: View {
             VStack(spacing: 28) {
                 Header(now: now, source: response.source, isRefreshing: isRefreshing)
                 if let path, let next, let today {
-                    SunPathDial(day: today, path: path, next: next, now: now)
+                    KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
+                        SunPathDial(day: today, path: path, next: next, now: now, launch: launch, ripple: ripple, rippleAt: rippleAt)
+                    } keyframes: { _ in
+                        MoveKeyframe(0)
+                        LinearKeyframe(1, duration: 0.9)
+                    }
+                    .onAppear {
+                        withAnimation(.easeOut(duration: 1.3)) {
+                            launch = 1
+                        }
+                    }
                 }
                 if let today {
                     PrayerList(day: today, next: next, now: now)
@@ -41,9 +53,15 @@ struct SunPathView: View {
             .padding(.vertical, 12)
         }
         .pullToRefresh { await refresh() }
+        .onChange(of: next?.begins) { began, _ in
+            if let began, began <= now {
+                rippleAt = began
+            }
+        }
         .background {
             (isDay(on: path) ? Palette.day : Palette.night)
                 .ignoresSafeArea()
+                .animation(.easeInOut(duration: 1.2), value: isDay(on: path))
         }
         .foregroundStyle(Palette.ink)
         .tint(Palette.ink)
@@ -83,6 +101,7 @@ private struct Header: View {
     }
 }
 
+@Animatable
 private struct SunPathDial: View {
     static let canvas = CGSize(width: 300, height: 232)
     static let center = CGPoint(x: 150, y: 120)
@@ -90,10 +109,13 @@ private struct SunPathDial: View {
     static let horizonInset: CGFloat = 18
     static let textGap: CGFloat = 12
 
-    let day: PrayerDay
-    let path: SunPath
-    let next: PrayerTime
-    let now: Date
+    @AnimatableIgnored var day: PrayerDay
+    @AnimatableIgnored var path: SunPath
+    @AnimatableIgnored var next: PrayerTime
+    @AnimatableIgnored var now: Date
+    var launch: Double
+    @AnimatableIgnored var ripple: Double
+    @AnimatableIgnored var rippleAt: Date?
 
     var body: some View {
         Canvas { context, size in
@@ -105,14 +127,13 @@ private struct SunPathDial: View {
                 style: StrokeStyle(lineWidth: 2 * scale, dash: [3 * scale, 6 * scale])
             )
 
-            let sunAngle = path.angle(at: now)
-            let sweep = (sunAngle - path.angle(at: next.begins)).truncatingRemainder(dividingBy: 360)
+            let sunAngle = 180 - Self.travel(from: 180, to: path.angle(at: now)) * launch
             var remaining = Path()
             remaining.addArc(
                 center: CGPoint(x: Self.center.x * scale, y: Self.center.y * scale),
                 radius: Self.radius * scale,
                 startAngle: .degrees(-sunAngle),
-                endAngle: .degrees(-sunAngle + (sweep < 0 ? sweep + 360 : sweep)),
+                endAngle: .degrees(-sunAngle + Self.travel(from: sunAngle, to: path.angle(at: next.begins))),
                 clockwise: false
             )
             context.stroke(remaining, with: .color(Palette.gold), style: StrokeStyle(lineWidth: 3 * scale, lineCap: .round))
@@ -123,19 +144,27 @@ private struct SunPathDial: View {
             context.stroke(horizon, with: .color(Palette.ink), style: StrokeStyle(lineWidth: 3 * scale, lineCap: .round))
 
             for time in day.times.map({ $0.prayer == next.prayer ? next : $0 }) {
-                let dot = circle(around: point(at: time.begins), radius: 5, scale: scale)
+                let dot = circle(around: point(at: path.angle(at: time.begins)), radius: 5, scale: scale)
                 context.fill(Path(ellipseIn: dot), with: .color(Palette.ink.opacity(time.begins <= now ? 0.4 : 1)))
             }
 
             context.stroke(
-                Path(ellipseIn: circle(around: point(at: next.begins), radius: 10, scale: scale)),
+                Path(ellipseIn: circle(around: point(at: path.angle(at: next.begins)), radius: 10, scale: scale)),
                 with: .color(Palette.gold),
                 lineWidth: 2 * scale
             )
 
+            if let rippleAt, ripple < 1 {
+                context.stroke(
+                    Path(ellipseIn: circle(around: point(at: path.angle(at: rippleAt)), radius: 5 + 21 * ripple, scale: scale)),
+                    with: .color(Palette.gold.opacity(0.9 * (1 - ripple))),
+                    lineWidth: 2 * scale
+                )
+            }
+
             let isDay = now >= path.sunrise && now < path.maghrib
             context.fill(
-                Path(ellipseIn: circle(around: point(at: now), radius: 13, scale: scale)),
+                Path(ellipseIn: circle(around: point(at: sunAngle), radius: 13, scale: scale)),
                 with: .color(isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device))
             )
 
@@ -155,9 +184,14 @@ private struct SunPathDial: View {
         .aspectRatio(Self.canvas, contentMode: .fit)
     }
 
-    private func point(at date: Date) -> CGPoint {
-        let angle = path.angle(at: date) * .pi / 180
-        return CGPoint(x: Self.center.x + Self.radius * cos(angle), y: Self.center.y - Self.radius * sin(angle))
+    private func point(at angle: Double) -> CGPoint {
+        let radians = angle * .pi / 180
+        return CGPoint(x: Self.center.x + Self.radius * cos(radians), y: Self.center.y - Self.radius * sin(radians))
+    }
+
+    private static func travel(from start: Double, to end: Double) -> Double {
+        let degrees = (start - end).truncatingRemainder(dividingBy: 360)
+        return degrees < 0 ? degrees + 360 : degrees
     }
 
     private func circle(around center: CGPoint, radius: CGFloat, scale: CGFloat) -> CGRect {
