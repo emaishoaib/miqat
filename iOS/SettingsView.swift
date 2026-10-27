@@ -57,9 +57,13 @@ private struct SettingsView: View {
                     ReminderPicker()
                     SoundPicker()
                 }
+                Section {
+                    LabeledContent("Version", value: "\(Self.info("CFBundleShortVersionString")) (\(Self.info("CFBundleVersion")))")
+                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .font(.body)
             .foregroundStyle(.primary)
             .tint(nil)
             .toolbar {
@@ -70,6 +74,10 @@ private struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private static func info(_ key: String) -> String {
+        Bundle.main.object(forInfoDictionaryKey: key) as? String ?? ""
     }
 }
 
