@@ -167,6 +167,8 @@ private struct Header: View {
     let date: Date
     let source: TimesSource
 
+    @State private var explainsTimes = false
+
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
@@ -174,9 +176,21 @@ private struct Header: View {
                     .font(.title3.bold())
                 Text(HijriDate.formatted(date))
                     .foregroundStyle(Palette.ink.opacity(0.7))
-                SourceLabel(source: source)
+                Button {
+                    explainsTimes = true
+                } label: {
+                    HStack(spacing: 6) {
+                        SourceLabel(source: source)
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(Palette.ink.opacity(0.5))
+                    }
                     .font(.subheadline)
-                    .padding(.top, 6)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 6)
+                .sheet(isPresented: $explainsTimes) {
+                    TimesExplanationView(source: source)
+                }
             }
             Spacer()
             SettingsButton()
