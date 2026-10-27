@@ -6,6 +6,8 @@ enum Palette {
     static let night = Color(red: 0x06 / 255, green: 0x18 / 255, blue: 0x3A / 255)
     static let ink = Color(red: 0xEA / 255, green: 0xF1 / 255, blue: 0xFB / 255)
     static let gold = Color(red: 0xF5 / 255, green: 0xD2 / 255, blue: 0x7A / 255)
+    static let dayRed = Color(red: 0xFF / 255, green: 0x9E / 255, blue: 0x8F / 255)
+    static let nightRed = Color(red: 0xFF / 255, green: 0x7B / 255, blue: 0x72 / 255)
 }
 
 struct SunPathView: View {
@@ -297,7 +299,9 @@ private struct SunPathDial: View {
             let horizonY = Self.center.y * scale
             let label = context.resolve(Text("Next prayer").font(.caption).foregroundStyle(Palette.ink.opacity(0.7)))
             let name = context.resolve(Text(next.prayer.name).font(.title.weight(.semibold)).foregroundStyle(Palette.ink))
-            let countdown = context.resolve(Text(Self.countdown(to: next.begins, from: now)).font(.headline).foregroundStyle(Palette.gold))
+            let isSoon = PrayerUrgency(timeUntilNext: next.begins.timeIntervalSince(now)) != .normal
+            let countdownColor = isSoon ? (isDay ? Palette.dayRed : Palette.nightRed) : Palette.gold
+            let countdown = context.resolve(Text(Self.countdown(to: next.begins, from: now)).font(.headline).foregroundStyle(countdownColor))
             let time = context.resolve(Text("at \(next.begins.formatted(date: .omitted, time: .shortened))").font(.subheadline).foregroundStyle(Palette.ink.opacity(0.7)))
             let nameHeight = name.measure(in: size).height
             let countdownHeight = countdown.measure(in: size).height
