@@ -105,6 +105,18 @@ private struct SunPathDial: View {
                 style: StrokeStyle(lineWidth: 2 * scale, dash: [3 * scale, 6 * scale])
             )
 
+            let sunAngle = path.angle(at: now)
+            let sweep = (sunAngle - path.angle(at: next.begins)).truncatingRemainder(dividingBy: 360)
+            var remaining = Path()
+            remaining.addArc(
+                center: CGPoint(x: Self.center.x * scale, y: Self.center.y * scale),
+                radius: Self.radius * scale,
+                startAngle: .degrees(-sunAngle),
+                endAngle: .degrees(-sunAngle + (sweep < 0 ? sweep + 360 : sweep)),
+                clockwise: false
+            )
+            context.stroke(remaining, with: .color(Palette.gold), style: StrokeStyle(lineWidth: 3 * scale, lineCap: .round))
+
             var horizon = Path()
             horizon.move(to: CGPoint(x: Self.horizonInset * scale, y: Self.center.y * scale))
             horizon.addLine(to: CGPoint(x: (Self.canvas.width - Self.horizonInset) * scale, y: Self.center.y * scale))
