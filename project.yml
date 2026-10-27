@@ -31,7 +31,10 @@ targets:
   Miqat-iOS:
     type: application
     platform: iOS
-    sources: [iOS, Shared]
+    sources:
+      - iOS
+      - Shared
+      - Icon/AppIcon.icon
     dependencies:
       - package: PrayerKit
       - target: Miqat-Widget
@@ -48,6 +51,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: Miqat
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.mashoaib.miqat
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Miqat
@@ -80,7 +84,10 @@ targets:
   Miqat-macOS:
     type: application
     platform: macOS
-    sources: [macOS, Shared]
+    sources:
+      - macOS
+      - Shared
+      - Icon/AppIcon.icon
     dependencies:
       - package: PrayerKit
     info:
@@ -90,6 +97,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: Miqat
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.mashoaib.miqat
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Miqat
@@ -104,6 +112,7 @@ targets:
     sources:
       - watchOS
       - Shared/TimetableModel.swift
+      - Icon/AppIcon.icon
     dependencies:
       - package: PrayerKit
       - target: Miqat-WatchWidget
@@ -118,6 +127,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: Miqat
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.mashoaib.miqat.watchkitapp
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Miqat
