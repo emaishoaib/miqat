@@ -1,3 +1,4 @@
+import AVFoundation
 import PrayerKit
 import SwiftUI
 
@@ -5,8 +6,14 @@ enum NotificationSettings {
     static let reminderKey = "reminderMinutes"
     static let reminderOptions = [0, 5, 10, 15, 20, 30]
 
+    static let soundKey = "sound"
+
     static var reminderMinutes: Int {
         UserDefaults.standard.integer(forKey: reminderKey)
+    }
+
+    static var sound: NotificationSound {
+        UserDefaults.standard.string(forKey: soundKey).flatMap(NotificationSound.init) ?? .standard
     }
 
     static func key(for prayer: Prayer) -> String {
@@ -48,6 +55,7 @@ private struct SettingsView: View {
                 }
                 Section {
                     ReminderPicker()
+                    SoundPicker()
                 }
             }
             .navigationTitle("Settings")
@@ -101,5 +109,32 @@ private struct ReminderPicker: View {
                 await PrayerNotifications.reschedule()
             }
         }
+    }
+}
+
+private struct SoundPicker: View {
+    @AppStorage(NotificationSettings.soundKey) private var sound = NotificationSound.standard
+    @State private var player: AVAudioPlayer?
+
+    var body: some View {
+        Picker("Sound", selection: $sound) {
+            ForEach(NotificationSound.allCases, id: \.self) { option in
+                Text(option.name)
+                    .tag(option)
+            }
+        }
+        .onChange(of: sound) {
+            play(sound)
+            Task {
+                await PrayerNotifications.reschedule()
+            }
+        }
+    }
+
+    private func play(_ sound: NotificationSound) {
+        player = sound.fileName
+            .flatMap { Bundle.main.url(forResource: $0, withExtension: nil) }
+            .flatMap { try? AVAudioPlayer(contentsOf: $0) }
+        player?.play()
     }
 }

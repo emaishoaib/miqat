@@ -31,6 +31,32 @@ enum PrayerNotifications {
     }
 }
 
+enum NotificationSound: String, CaseIterable {
+    case standard
+    case water
+    case birds
+    case nightingale
+    case tasbih
+
+    var name: String {
+        switch self {
+        case .standard: "Default"
+        case .water: "Water"
+        case .birds: "Birds"
+        case .nightingale: "Nightingale"
+        case .tasbih: "Tasbih"
+        }
+    }
+
+    var fileName: String? {
+        self == .standard ? nil : "\(rawValue).caf"
+    }
+
+    var notificationSound: UNNotificationSound {
+        fileName.map { UNNotificationSound(named: UNNotificationSoundName($0)) } ?? .default
+    }
+}
+
 private struct Alert {
     let time: PrayerTime
     let minutesBefore: Int
@@ -44,7 +70,7 @@ private struct Alert {
         let content = UNMutableNotificationContent()
         content.title = time.prayer.name
         content.body = minutesBefore == 0 ? "Begins at \(begins)" : "Begins in \(minutesBefore) minutes, at \(begins)"
-        content.sound = .default
+        content.sound = NotificationSettings.sound.notificationSound
 
         let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
