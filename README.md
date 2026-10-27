@@ -50,8 +50,12 @@ printf %s "new-value" | gcloud secrets versions add admin-token --data-file=-
 
 ## Deploying
 
+Cloud Build deploys the server whenever a push to `main` changes `server/` or `cloudbuild.yaml`. It builds the image, pushes it to Artifact Registry and points Cloud Run at it. Each run shows up under Cloud Build's History in the Google Cloud console.
+
+To deploy without a new commit:
+
 ```bash
-infra/deploy.sh
+gcloud builds triggers run deploy-server --region=europe-central2 --branch=main
 ```
 
-It builds the server image from the committed code in Cloud Build, then applies Terraform with it.
+Terraform does not track the server's image, so applying it never rolls a deploy back.

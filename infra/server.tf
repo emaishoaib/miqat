@@ -21,7 +21,7 @@ resource "google_cloud_run_v2_service" "server" {
     }
 
     containers {
-      image = var.image
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
 
       dynamic "env" {
         for_each = local.server_secrets
@@ -41,7 +41,7 @@ resource "google_cloud_run_v2_service" "server" {
   }
 
   lifecycle {
-    ignore_changes = [client, client_version]
+    ignore_changes = [client, client_version, template[0].containers[0].image]
   }
 
   depends_on = [

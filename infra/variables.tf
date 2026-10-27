@@ -9,11 +9,6 @@ variable "region" {
   default     = "europe-central2"
 }
 
-variable "image" {
-  description = "The container image the server runs."
-  type        = string
-}
-
 variable "neon_project_id" {
   description = "The ID of the Neon project that holds the database."
   type        = string
