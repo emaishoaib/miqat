@@ -13,7 +13,7 @@ class GeocodingError(Exception):
 
 
 @dataclass(frozen=True)
-class City:
+class GeocodedCity:
     place_id: str
     name: str
     country: str
@@ -26,7 +26,7 @@ class GeocodingClient:
         self.api_key = api_key
         self.http = http or httpx.Client(timeout=10)
 
-    def city_at(self, latitude: float, longitude: float) -> City | None:
+    def city_at(self, latitude: float, longitude: float) -> GeocodedCity | None:
         response = self.http.get(
             GEOCODE_URL,
             params={
@@ -57,7 +57,7 @@ class GeocodingClient:
         if country is None:
             return None
         location = result["geometry"]["location"]
-        return City(
+        return GeocodedCity(
             place_id=result["place_id"],
             name=name,
             country=country,

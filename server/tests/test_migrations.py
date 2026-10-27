@@ -16,7 +16,9 @@ def test_migrations_build_the_same_tables_as_the_models(engine, alembic_config):
     command.upgrade(alembic_config, "head")
 
     command.check(alembic_config)
-    assert {"mosques", "prayer_times"} <= set(inspect(engine).get_table_names())
+    assert {"mosques", "prayer_times", "cities", "city_prayer_times"} <= set(
+        inspect(engine).get_table_names()
+    )
 
 
 def test_migrations_can_be_undone(engine, alembic_config):
@@ -25,4 +27,6 @@ def test_migrations_can_be_undone(engine, alembic_config):
 
     command.downgrade(alembic_config, "base")
 
-    assert not {"mosques", "prayer_times"} & set(inspect(engine).get_table_names())
+    assert not {"mosques", "prayer_times", "cities", "city_prayer_times"} & set(
+        inspect(engine).get_table_names()
+    )

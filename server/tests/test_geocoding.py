@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from app.geocoding import City, GeocodingClient, GeocodingError
+from app.geocoding import GeocodedCity, GeocodingClient, GeocodingError
 
 SOLIHULL = {
     "status": "OK",
@@ -46,7 +46,7 @@ def client_returning(body, requests=None):
 def test_returns_the_city_with_its_country_code_and_centre():
     city = client_returning(SOLIHULL).city_at(52.4128, -1.7781)
 
-    assert city == City("place-solihull", "Solihull", "GB", 52.4118, -1.7776)
+    assert city == GeocodedCity("place-solihull", "Solihull", "GB", 52.4118, -1.7776)
 
 
 def test_asks_google_for_the_city_at_the_location_in_english_with_the_key():
