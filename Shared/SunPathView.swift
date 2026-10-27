@@ -67,12 +67,14 @@ struct SunPathView: View {
                         }
                     }
                     .padding(.horizontal, -Self.margin)
+                    #if os(iOS)
                     .simultaneousGesture(
                         DragGesture(minimumDistance: 30).onEnded { drag in
                             guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
                             browse(by: drag.translation.width < 0 ? 1 : -1, from: shownIndex)
                         }
                     )
+                    #endif
                 }
             }
             .onGeometryChange(for: CGFloat.self) { proxy in
@@ -83,9 +85,11 @@ struct SunPathView: View {
             .padding(.horizontal, Self.margin)
             .padding(.vertical, 12)
         }
+        #if os(iOS)
         .pullToRefresh {
             await refreshWithPulse()
         }
+        #endif
         .onChange(of: next?.begins) { began, _ in
             if let began, began <= now {
                 rippleAt = began
@@ -102,7 +106,7 @@ struct SunPathView: View {
         .foregroundStyle(Palette.ink)
         .tint(Palette.ink)
         .preferredColorScheme(.dark)
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: Self.becameActive)) { _ in
             systemIsDark = Self.systemIsDark()
         }
     }
@@ -116,11 +120,21 @@ struct SunPathView: View {
         }
     }
 
+    #if os(iOS)
+    private static let becameActive = UIApplication.didBecomeActiveNotification
+
     private static func systemIsDark() -> Bool {
         UIApplication.shared.connectedScenes
             .compactMap { ($0 as? UIWindowScene)?.screen.traitCollection.userInterfaceStyle }
             .first == .dark
     }
+    #else
+    private static let becameActive = NSApplication.didBecomeActiveNotification
+
+    private static func systemIsDark() -> Bool {
+        NSApplication.shared.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
+    #endif
 
     private func isDay(on path: SunPath?) -> Bool {
         guard let path else { return true }
@@ -232,7 +246,9 @@ private struct Header: View {
                 }
                 .buttonStyle(.borderless)
                 .accessibilityLabel("Refresh prayer times")
+                #if os(iOS)
                 SettingsButton()
+                #endif
             }
             .font(.title3)
         }
