@@ -71,6 +71,9 @@ private struct DateHeader: View {
                 .buttonStyle(.borderless)
                 .disabled(isRefreshing)
                 .accessibilityLabel("Refresh prayer times")
+                #if os(iOS)
+                SettingsButton()
+                #endif
             }
             Text(HijriDate.formatted(now))
                 .foregroundStyle(.secondary)
