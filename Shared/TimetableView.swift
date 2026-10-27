@@ -39,11 +39,7 @@ struct TimetableView: View {
                 }
             }
         }
-        #if os(iOS)
-        .pullToRefresh { await refresh() }
-        #else
         .refreshable { await refresh() }
-        #endif
     }
 }
 
@@ -77,26 +73,11 @@ private struct DateHeader: View {
             }
             Text(HijriDate.formatted(now))
                 .foregroundStyle(.secondary)
-            sourceLabel
+            SourceLabel(source: source)
                 .font(.subheadline)
                 .padding(.top, 4)
         }
         .padding(.vertical, 4)
-    }
-
-    @ViewBuilder
-    private var sourceLabel: some View {
-        switch source {
-        case .mosque(let mosque, let distance):
-            let measurement = Measurement(value: distance, unit: UnitLength.meters)
-            Label {
-                Text("\(mosque.name) · \(measurement.formatted(.measurement(width: .abbreviated, usage: .road)))")
-            } icon: {
-                Image(systemName: "building.columns")
-            }
-        case .city(let name):
-            Label(name, systemImage: "mappin.and.ellipse")
-        }
     }
 }
 

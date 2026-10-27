@@ -13,9 +13,15 @@ struct TimetableScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .loaded(let response):
             TimelineView(.everyMinute) { context in
+                #if os(iOS)
+                SunPathView(response: response, now: context.date, isRefreshing: model.isRefreshing) {
+                    await model.load()
+                }
+                #else
                 TimetableView(response: response, now: context.date, isRefreshing: model.isRefreshing) {
                     await model.load()
                 }
+                #endif
             }
         case .failed(let error):
             ContentUnavailableView {

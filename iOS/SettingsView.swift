@@ -60,6 +60,8 @@ private struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .foregroundStyle(.primary)
+            .tint(nil)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
