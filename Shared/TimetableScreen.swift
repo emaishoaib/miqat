@@ -7,21 +7,25 @@ struct TimetableScreen: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
+        content
+            #if os(macOS)
+            .safeAreaInset(edge: .bottom) {
+                QuitBar()
+            }
+            #endif
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch model.state {
         case .loading:
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .loaded(let response):
             TimelineView(.everyMinute) { context in
-                #if os(iOS)
                 SunPathView(response: response, now: context.date) {
                     await model.load()
                 }
-                #else
-                TimetableView(response: response, now: context.date, isRefreshing: model.isRefreshing) {
-                    await model.load()
-                }
-                #endif
             }
         case .failed(let error):
             ContentUnavailableView {

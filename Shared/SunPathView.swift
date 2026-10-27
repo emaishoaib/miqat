@@ -19,7 +19,9 @@ struct SunPathView: View {
     let refresh: () async -> Void
 
     @State private var contentWidth: CGFloat = 0
-    @State private var launch: Double = 0
+    private static var hasGrownIn = false
+
+    @State private var launch: Double = hasGrownIn ? 1 : 0
     @State private var rippleAt: Date?
     @State private var dayOffset = 0
     @State private var pulseStart: Date?
@@ -50,6 +52,8 @@ struct SunPathView: View {
                         }
                     }
                     .onAppear {
+                        guard !Self.hasGrownIn else { return }
+                        Self.hasGrownIn = true
                         withAnimation(.linear(duration: 1.4)) {
                             launch = 1
                         }

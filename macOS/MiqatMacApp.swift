@@ -15,17 +15,8 @@ struct MiqatMacApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            VStack(spacing: 0) {
-                TimetableScreen(model: model)
-                Divider()
-                HStack {
-                    Spacer()
-                    Button("Quit Miqat") { NSApplication.shared.terminate(nil) }
-                        .keyboardShortcut("q")
-                }
-                .padding(10)
-            }
-            .frame(width: 340, height: 600)
+            TimetableScreen(model: model)
+                .frame(width: 360, height: 680)
             .onAppear { status.acknowledge() }
         } label: {
             MenuBarLabel(status: status)
