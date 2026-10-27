@@ -33,3 +33,8 @@ variable "domain" {
   description = "The domain the server is reached through."
   type        = string
 }
+
+variable "maps_api_key_id" {
+  description = "The ID of the Google Maps API key the server uses."
+  type        = string
+}

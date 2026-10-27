@@ -1,14 +1,20 @@
+locals {
+  maps_apis = [
+    "geocoding-backend.googleapis.com",
+    "places.googleapis.com",
+    "timezone-backend.googleapis.com",
+  ]
+}
+
 resource "google_project_service" "enabled" {
-  for_each = toset([
+  for_each = toset(concat([
+    "apikeys.googleapis.com",
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
     "cloudresourcemanager.googleapis.com",
-    "geocoding-backend.googleapis.com",
-    "places.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
-    "timezone-backend.googleapis.com",
-  ])
+  ], local.maps_apis))
 
   service            = each.key
   disable_on_destroy = false

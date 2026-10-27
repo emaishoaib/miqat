@@ -17,6 +17,7 @@ All of it is managed by Terraform in `infra/`.
 - Cloud Run runs the server image built from `server/`, scaling from 0 to 2 instances
 - Artifact Registry stores the server images, keeping the 2 most recent
 - Secret Manager holds the database URL, the Google Maps key, the admin token, and the Neon and Cloudflare tokens
+- The Google Maps key is restricted to the Places, Time Zone and Geocoding APIs
 - Cloud Storage holds Terraform's state in a private bucket
 
 ## Neon
@@ -32,7 +33,7 @@ All of it is managed by Terraform in `infra/`.
 
 These files hold IDs and are not committed. Each has an `.example` next to it.
 
-- `infra/terraform.tfvars`: project, Neon and Cloudflare IDs, and the domain
+- `infra/terraform.tfvars`: project, Maps key, Neon and Cloudflare IDs, and the domain
 - `infra/backend.hcl`: the state bucket
 
 ```bash

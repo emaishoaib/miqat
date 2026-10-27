@@ -17,3 +17,8 @@ import {
   to = cloudflare_zone.domain
   id = var.cloudflare_zone_id
 }
+
+import {
+  to = google_apikeys_key.maps
+  id = "projects/${var.project_id}/locations/global/keys/${var.maps_api_key_id}"
+}
