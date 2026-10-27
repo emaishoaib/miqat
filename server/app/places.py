@@ -57,8 +57,8 @@ def google_api_key() -> str:
     api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "Set GOOGLE_MAPS_API_KEY to a Google Cloud key with the Places API "
-            "and the Time Zone API enabled."
+            "Set GOOGLE_MAPS_API_KEY to a Google Cloud key with the Places API, "
+            "the Time Zone API and the Geocoding API enabled."
         )
     return api_key
 

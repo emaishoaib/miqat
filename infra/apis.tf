@@ -3,6 +3,7 @@ resource "google_project_service" "enabled" {
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "geocoding-backend.googleapis.com",
     "places.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
