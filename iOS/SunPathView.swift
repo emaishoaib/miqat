@@ -9,6 +9,8 @@ enum Palette {
 }
 
 struct SunPathView: View {
+    private static let margin: CGFloat = 20
+
     let response: PrayerTimesResponse
     let now: Date
     let isRefreshing: Bool
@@ -17,16 +19,19 @@ struct SunPathView: View {
     @State private var contentWidth: CGFloat = 0
     @State private var launch: Double = 0
     @State private var rippleAt: Date?
+    @State private var dayOffset = 0
 
     var body: some View {
         let path = response.sunPath(on: now)
         let next = response.nextPrayer(after: now)
         let today = response.day(containing: now)
         let listed = next.flatMap { response.day(containing: $0.begins) } ?? today
+        let shownIndex = listed.flatMap { response.days.firstIndex(of: $0) }.map { min(max($0 + dayOffset, 0), response.days.count - 1) }
+        let shown = shownIndex.map { response.days[$0] }
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: listed?.date ?? now, source: response.source, isRefreshing: isRefreshing)
+                Header(date: shown?.date ?? now, source: response.source, isRefreshing: isRefreshing)
                 if let path, let next, let today {
                     KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
                         SunPathDial(day: today, path: path, next: next, now: now, launch: launch, ripple: ripple, rippleAt: rippleAt)
@@ -40,9 +45,24 @@ struct SunPathView: View {
                         }
                     }
                 }
-                if let listed {
-                    PrayerList(day: listed, next: next, now: now)
-                        .padding(.horizontal, contentWidth * SunPathDial.horizonInset / SunPathDial.canvas.width)
+                if let shown, let shownIndex {
+                    let gap = contentWidth * SunPathDial.horizonInset / SunPathDial.canvas.width + Self.margin
+                    HStack(spacing: 0) {
+                        DayChevron(systemName: "chevron.left", label: "Previous day", isShown: shownIndex > 0, width: gap) {
+                            browse(by: -1, from: shownIndex)
+                        }
+                        PrayerList(day: shown, next: next, now: now)
+                        DayChevron(systemName: "chevron.right", label: "Next day", isShown: shownIndex < response.days.count - 1, width: gap) {
+                            browse(by: 1, from: shownIndex)
+                        }
+                    }
+                    .padding(.horizontal, -Self.margin)
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 30).onEnded { drag in
+                            guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
+                            browse(by: drag.translation.width < 0 ? 1 : -1, from: shownIndex)
+                        }
+                    )
                 }
             }
             .onGeometryChange(for: CGFloat.self) { proxy in
@@ -50,7 +70,7 @@ struct SunPathView: View {
             } action: { width in
                 contentWidth = width
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Self.margin)
             .padding(.vertical, 12)
         }
         .pullToRefresh { await refresh() }
@@ -58,6 +78,9 @@ struct SunPathView: View {
             if let began, began <= now {
                 rippleAt = began
             }
+        }
+        .onChange(of: listed?.date) {
+            dayOffset = 0
         }
         .background {
             (isDay(on: path) ? Palette.day : Palette.night)
@@ -72,6 +95,36 @@ struct SunPathView: View {
     private func isDay(on path: SunPath?) -> Bool {
         guard let path else { return true }
         return now >= path.sunrise && now < path.maghrib
+    }
+
+    private func browse(by step: Int, from index: Int) {
+        guard response.days.indices.contains(index + step) else { return }
+        withAnimation {
+            dayOffset += step
+        }
+    }
+}
+
+private struct DayChevron: View {
+    let systemName: String
+    let label: String
+    let isShown: Bool
+    let width: CGFloat
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Palette.ink.opacity(0.45))
+                .frame(width: width)
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .opacity(isShown ? 1 : 0)
+        .disabled(!isShown)
+        .accessibilityLabel(label)
     }
 }
 
