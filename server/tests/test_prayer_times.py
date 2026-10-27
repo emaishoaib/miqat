@@ -262,7 +262,12 @@ def test_falls_back_to_the_city_times_when_no_mosque_has_times(session, client):
     assert response.status_code == 200
     body = response.json()
     assert body["mosque"] is None
-    assert body["city"] == {"id": "place-solihull", "name": "Solihull"}
+    assert body["city"] == {
+        "id": "place-solihull",
+        "name": "Solihull",
+        "method": "Moonsighting Committee Worldwide",
+        "asr_school": "Hanafi",
+    }
     assert body["version"] == "place-solihull:1"
     assert body["days"][0]["times"][0] == {
         "prayer": "fajr",

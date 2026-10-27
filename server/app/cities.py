@@ -9,7 +9,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.aladhan import AlAdhanClient, CalculatedMonth
-from app.calculation import Method, School, method_for, school_for
+from app.calculation import (
+    METHOD_NAMES,
+    SCHOOL_NAMES,
+    Method,
+    School,
+    method_for,
+    school_for,
+)
 from app.geocoding import GeocodedCity, GeocodingClient, GeocodingError
 from app.models import City, CityPrayerTime, Prayer
 from app.schemas import CityOut, DayOut, PrayerTimeOut, TimetableOut
@@ -157,7 +164,12 @@ def city_timetable_response(city: City, times: list[CityPrayerTime]) -> Timetabl
         )
     return TimetableOut(
         version=city_timetable_version(city),
-        city=CityOut(id=city.place_id, name=city.name),
+        city=CityOut(
+            id=city.place_id,
+            name=city.name,
+            method=METHOD_NAMES[Method(city.method)],
+            asr_school=SCHOOL_NAMES[School(city.school)],
+        ),
         time_zone=city.time_zone,
         days=[DayOut(date=day, times=day_times) for day, day_times in days.items()],
     )

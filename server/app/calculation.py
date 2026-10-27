@@ -75,6 +75,36 @@ METHOD_BY_COUNTRY = {
     "US": Method.ISNA,
 }
 
+METHOD_NAMES = {
+    Method.KARACHI: "University of Islamic Sciences, Karachi",
+    Method.ISNA: "Islamic Society of North America",
+    Method.MUSLIM_WORLD_LEAGUE: "Muslim World League",
+    Method.UMM_AL_QURA: "Umm al-Qura University, Makkah",
+    Method.EGYPT: "Egyptian General Authority of Survey",
+    Method.TEHRAN: "Institute of Geophysics, University of Tehran",
+    Method.GULF: "Gulf Region",
+    Method.KUWAIT: "Kuwait",
+    Method.QATAR: "Qatar",
+    Method.SINGAPORE: "Majlis Ugama Islam Singapura",
+    Method.FRANCE: "Union des Organisations Islamiques de France",
+    Method.TURKEY: "Diyanet, Turkey",
+    Method.RUSSIA: "Spiritual Administration of Muslims of Russia",
+    Method.MOONSIGHTING_COMMITTEE: "Moonsighting Committee Worldwide",
+    Method.DUBAI: "Dubai",
+    Method.MALAYSIA: "JAKIM, Malaysia",
+    Method.TUNISIA: "Tunisia",
+    Method.ALGERIA: "Algeria",
+    Method.INDONESIA: "Kementerian Agama, Indonesia",
+    Method.MOROCCO: "Morocco",
+    Method.PORTUGAL: "Comunidade Islamica de Lisboa",
+    Method.JORDAN: "Ministry of Awqaf, Jordan",
+}
+
+SCHOOL_NAMES = {
+    School.STANDARD: "Shafi'i",
+    School.HANAFI: "Hanafi",
+}
+
 HANAFI_COUNTRIES = {
     "AF",
     "BD",

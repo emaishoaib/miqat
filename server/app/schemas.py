@@ -17,6 +17,8 @@ class MosqueOut(BaseModel):
 class CityOut(BaseModel):
     id: str
     name: str
+    method: str
+    asr_school: str
 
 
 class PrayerTimeOut(BaseModel):

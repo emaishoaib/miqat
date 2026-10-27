@@ -1,4 +1,11 @@
-from app.calculation import Method, School, method_for, school_for
+from app.calculation import (
+    METHOD_NAMES,
+    SCHOOL_NAMES,
+    Method,
+    School,
+    method_for,
+    school_for,
+)
 
 
 def test_the_uk_uses_the_moonsighting_committee_and_the_hanafi_school():
@@ -19,3 +26,8 @@ def test_a_country_without_an_entry_uses_the_muslim_world_league_and_standard():
 def test_country_codes_are_matched_regardless_of_case():
     assert method_for("pk") == Method.KARACHI
     assert school_for("pk") == School.HANAFI
+
+
+def test_every_method_and_school_has_a_name():
+    assert set(METHOD_NAMES) == set(Method)
+    assert set(SCHOOL_NAMES) == set(School)
