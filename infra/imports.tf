@@ -22,3 +22,8 @@ import {
   to = google_apikeys_key.maps
   id = "projects/${var.project_id}/locations/global/keys/${var.maps_api_key_id}"
 }
+
+import {
+  to = google_cloudbuildv2_connection.github
+  id = "projects/${var.project_id}/locations/${var.region}/connections/github"
+}

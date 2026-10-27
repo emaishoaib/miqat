@@ -38,3 +38,8 @@ variable "maps_api_key_id" {
   description = "The ID of the Google Maps API key the server uses."
   type        = string
 }
+
+variable "github_repository_url" {
+  description = "The GitHub repository Cloud Build deploys the server from."
+  type        = string
+}

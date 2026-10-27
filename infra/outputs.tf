@@ -22,3 +22,8 @@ output "public_url" {
   description = "The address the apps use to reach the server."
   value       = "https://${cloudflare_workers_custom_domain.server.hostname}"
 }
+
+output "github_connection_state" {
+  description = "What the GitHub connection is waiting for, with the link that finishes it."
+  value       = google_cloudbuildv2_connection.github.installation_state
+}
