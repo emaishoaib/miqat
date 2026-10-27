@@ -5,6 +5,10 @@ enum NotificationSettings {
     static func key(for prayer: Prayer) -> String {
         "notifies.\(prayer.rawValue)"
     }
+
+    static func isEnabled(_ prayer: Prayer) -> Bool {
+        UserDefaults.standard.bool(forKey: key(for: prayer))
+    }
 }
 
 struct SettingsButton: View {
@@ -61,5 +65,13 @@ private struct PrayerToggle: View {
 
     var body: some View {
         Toggle(prayer.name, isOn: $isOn)
+            .onChange(of: isOn) { _, isOn in
+                Task {
+                    if isOn {
+                        await PrayerNotifications.requestPermission()
+                    }
+                    await PrayerNotifications.reschedule()
+                }
+            }
     }
 }

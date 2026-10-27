@@ -46,14 +46,23 @@ final class TimetableModel {
             cache.saveCoordinate(coordinate)
             try await refresh(near: coordinate)
         } catch {
-            if case .loaded = state { return }
-            state = .failed(error)
+            if !hasTimetable {
+                state = .failed(error)
+            }
         }
+        await rescheduleNotifications()
     }
 
     func refreshInBackground() async {
         guard let coordinate = cache.loadCoordinate() else { return }
         try? await refresh(near: coordinate)
+        await rescheduleNotifications()
+    }
+
+    private func rescheduleNotifications() async {
+        #if os(iOS)
+        await PrayerNotifications.reschedule(cache: cache)
+        #endif
     }
 
     private func refresh(near coordinate: Coordinate) async throws {
@@ -63,6 +72,10 @@ final class TimetableModel {
         cache.save(response)
         WidgetCenter.shared.reloadAllTimelines()
         state = .loaded(response)
+    }
+
+    private var hasTimetable: Bool {
+        if case .loaded = state { true } else { false }
     }
 
     private var currentVersion: String? {
