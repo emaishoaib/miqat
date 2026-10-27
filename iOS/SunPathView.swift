@@ -22,10 +22,11 @@ struct SunPathView: View {
         let path = response.sunPath(on: now)
         let next = response.nextPrayer(after: now)
         let today = response.day(containing: now)
+        let listed = next.flatMap { response.day(containing: $0.begins) } ?? today
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(now: now, source: response.source, isRefreshing: isRefreshing)
+                Header(date: listed?.date ?? now, source: response.source, isRefreshing: isRefreshing)
                 if let path, let next, let today {
                     KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
                         SunPathDial(day: today, path: path, next: next, now: now, launch: launch, ripple: ripple, rippleAt: rippleAt)
@@ -39,8 +40,8 @@ struct SunPathView: View {
                         }
                     }
                 }
-                if let today {
-                    PrayerList(day: today, next: next, now: now)
+                if let listed {
+                    PrayerList(day: listed, next: next, now: now)
                         .padding(.horizontal, contentWidth * SunPathDial.horizonInset / SunPathDial.canvas.width)
                 }
             }
@@ -75,16 +76,16 @@ struct SunPathView: View {
 }
 
 private struct Header: View {
-    let now: Date
+    let date: Date
     let source: TimesSource
     let isRefreshing: Bool
 
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                     .font(.title3.bold())
-                Text(HijriDate.formatted(now))
+                Text(HijriDate.formatted(date))
                     .foregroundStyle(Palette.ink.opacity(0.7))
                 SourceLabel(source: source)
                     .font(.subheadline)
