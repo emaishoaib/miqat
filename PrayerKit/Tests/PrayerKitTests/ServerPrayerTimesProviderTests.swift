@@ -59,8 +59,30 @@ struct ServerPrayerTimesProviderTests {
         #expect(day.times[1].jamaat == nil)
     }
 
-    @Test func reportsNoNearbyMosqueWhenTheServerFindsNone() {
-        #expect(throws: PrayerTimesError.noNearbyMosque) {
+    @Test func readsTheCityWhenTheTimesAreCalculatedForIt() throws {
+        let cityBody = Data("""
+        {
+          "version": "place-solihull:1",
+          "mosque": null,
+          "city": {"id": "place-solihull", "name": "Solihull"},
+          "time_zone": "Europe/London",
+          "days": [
+            {
+              "date": "2027-06-01",
+              "times": [{"prayer": "fajr", "begins": "2027-06-01T03:00:00+01:00", "jamaat": null}]
+            }
+          ]
+        }
+        """.utf8)
+
+        let response = try #require(try ServerPrayerTimesProvider.response(from: cityBody, statusCode: 200))
+
+        #expect(response.source == .city(name: "Solihull"))
+        #expect(response.days.first?.times.first?.jamaat == nil)
+    }
+
+    @Test func reportsUnavailableWhenTheServerHasNoTimes() {
+        #expect(throws: PrayerTimesError.unavailable) {
             try ServerPrayerTimesProvider.response(from: Data(), statusCode: 404)
         }
     }

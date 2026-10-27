@@ -22,16 +22,19 @@ struct TimetableView: View {
             }
 
             if let today = response.day(containing: now) {
+                let showsJamaat = today.times.contains { $0.jamaat != nil }
                 Section {
                     ForEach(today.times, id: \.prayer) { time in
-                        PrayerRow(time: time, isNext: time == next)
+                        PrayerRow(time: time, isNext: time == next, showsJamaat: showsJamaat)
                     }
                 } header: {
                     HStack {
                         Text("Prayer")
                         Spacer()
                         Text("Begins").frame(width: PrayerRow.columnWidth, alignment: .trailing)
-                        Text("Jamaat").frame(width: PrayerRow.columnWidth, alignment: .trailing)
+                        if showsJamaat {
+                            Text("Jamaat").frame(width: PrayerRow.columnWidth, alignment: .trailing)
+                        }
                     }
                 }
             }
@@ -84,7 +87,7 @@ private struct DateHeader: View {
             } icon: {
                 Image(systemName: "building.columns")
             }
-        case .area(let name):
+        case .city(let name):
             Label(name, systemImage: "mappin.and.ellipse")
         }
     }
@@ -121,6 +124,7 @@ private struct PrayerRow: View {
 
     let time: PrayerTime
     let isNext: Bool
+    let showsJamaat: Bool
 
     var body: some View {
         HStack {
@@ -129,8 +133,10 @@ private struct PrayerRow: View {
             Spacer()
             Text(time.begins.formatted(date: .omitted, time: .shortened))
                 .frame(width: Self.columnWidth, alignment: .trailing)
-            Text(time.jamaat?.formatted(date: .omitted, time: .shortened) ?? "")
-                .frame(width: Self.columnWidth, alignment: .trailing)
+            if showsJamaat {
+                Text(time.jamaat?.formatted(date: .omitted, time: .shortened) ?? "")
+                    .frame(width: Self.columnWidth, alignment: .trailing)
+            }
         }
         .monospacedDigit()
         .foregroundStyle(time.prayer.isPrayer ? .primary : .secondary)

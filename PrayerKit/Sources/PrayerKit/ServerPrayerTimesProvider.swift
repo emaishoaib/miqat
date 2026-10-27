@@ -1,12 +1,12 @@
 import Foundation
 
 public enum PrayerTimesError: LocalizedError, Equatable {
-    case noNearbyMosque
+    case unavailable
     case server(statusCode: Int)
 
     public var errorDescription: String? {
         switch self {
-        case .noNearbyMosque: "None of the mosques near you have prayer times yet."
+        case .unavailable: "Unable to get prayer times."
         case .server(let statusCode): "The prayer times server had a problem (\(statusCode))."
         }
     }
@@ -46,7 +46,7 @@ public struct ServerPrayerTimesProvider: PrayerTimesProvider {
         switch statusCode {
         case 200: break
         case 304: return nil
-        case 404: throw PrayerTimesError.noNearbyMosque
+        case 404: throw PrayerTimesError.unavailable
         default: throw PrayerTimesError.server(statusCode: statusCode)
         }
 
@@ -67,6 +67,11 @@ private struct ServerTimetable: Decodable {
         let distanceMeters: Double
     }
 
+    struct City: Decodable {
+        let id: String
+        let name: String
+    }
+
     struct Day: Decodable {
         let date: String
         let times: [Time]
@@ -79,7 +84,8 @@ private struct ServerTimetable: Decodable {
     }
 
     let version: String
-    let mosque: Mosque
+    let mosque: Mosque?
+    let city: City?
     let timeZone: String
     let days: [Day]
 
@@ -94,15 +100,26 @@ private struct ServerTimetable: Decodable {
                 times: day.times.map { PrayerTime(prayer: $0.prayer, begins: $0.begins, jamaat: $0.jamaat) }
             )
         }
-        let source = TimesSource.mosque(
-            PrayerKit.Mosque(
-                id: mosque.id,
-                name: mosque.name,
-                address: mosque.address,
-                coordinate: Coordinate(latitude: mosque.latitude, longitude: mosque.longitude)
-            ),
-            distanceInMeters: mosque.distanceMeters
+        return PrayerTimesResponse(source: try source(), days: prayerDays, version: version)
+    }
+
+    private func source() throws -> TimesSource {
+        if let mosque {
+            return .mosque(
+                PrayerKit.Mosque(
+                    id: mosque.id,
+                    name: mosque.name,
+                    address: mosque.address,
+                    coordinate: Coordinate(latitude: mosque.latitude, longitude: mosque.longitude)
+                ),
+                distanceInMeters: mosque.distanceMeters
+            )
+        }
+        if let city {
+            return .city(name: city.name)
+        }
+        throw DecodingError.dataCorrupted(
+            DecodingError.Context(codingPath: [], debugDescription: "The timetable has neither a mosque nor a city.")
         )
-        return PrayerTimesResponse(source: source, days: prayerDays, version: version)
     }
 }
