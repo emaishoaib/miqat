@@ -10,6 +10,7 @@ enum Palette {
 
 struct SunPathView: View {
     private static let margin: CGFloat = 20
+    private static let lap: TimeInterval = 1.2
 
     let response: PrayerTimesResponse
     let now: Date
@@ -20,6 +21,8 @@ struct SunPathView: View {
     @State private var launch: Double = 0
     @State private var rippleAt: Date?
     @State private var dayOffset = 0
+    @State private var lapStart: Date?
+    @State private var lapEnd: Date?
 
     var body: some View {
         let path = response.sunPath(on: now)
@@ -31,13 +34,15 @@ struct SunPathView: View {
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, source: response.source, isRefreshing: isRefreshing)
+                Header(date: shown?.date ?? now, source: response.source)
                 if let path, let next, let today {
-                    KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
-                        SunPathDial(day: today, path: path, next: next, now: now, launch: launch, ripple: ripple, rippleAt: rippleAt)
-                    } keyframes: { _ in
-                        MoveKeyframe(0)
-                        LinearKeyframe(1, duration: 0.9)
+                    TimelineView(.animation(paused: lapStart == nil)) { timeline in
+                        KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
+                            SunPathDial(day: today, path: path, next: next, now: now, launch: launch, spin: spin(at: timeline.date), ripple: ripple, rippleAt: rippleAt)
+                        } keyframes: { _ in
+                            MoveKeyframe(0)
+                            LinearKeyframe(1, duration: 0.9)
+                        }
                     }
                     .onAppear {
                         withAnimation(.easeOut(duration: 1.3)) {
@@ -82,6 +87,9 @@ struct SunPathView: View {
         .onChange(of: listed?.date) {
             dayOffset = 0
         }
+        .onChange(of: isRefreshing, initial: true) { _, refreshing in
+            refreshing ? startLap() : finishLap()
+        }
         .background {
             (isDay(on: path) ? Palette.day : Palette.night)
                 .ignoresSafeArea()
@@ -101,6 +109,33 @@ struct SunPathView: View {
         guard response.days.indices.contains(index + step) else { return }
         withAnimation {
             dayOffset += step
+        }
+    }
+
+    private func spin(at date: Date) -> Double {
+        guard let lapStart else { return 0 }
+        if let lapEnd, date >= lapEnd { return 0 }
+        return (date.timeIntervalSince(lapStart) / Self.lap).truncatingRemainder(dividingBy: 1)
+    }
+
+    private func startLap() {
+        lapEnd = nil
+        if lapStart == nil {
+            lapStart = .now
+        }
+    }
+
+    private func finishLap() {
+        guard let lapStart else { return }
+        let laps = max(1, (Date.now.timeIntervalSince(lapStart) / Self.lap).rounded(.up))
+        let end = lapStart.addingTimeInterval(laps * Self.lap)
+        lapEnd = end
+        Task {
+            try? await Task.sleep(for: .seconds(end.timeIntervalSinceNow))
+            if lapEnd == end {
+                self.lapStart = nil
+                lapEnd = nil
+            }
         }
     }
 }
@@ -131,7 +166,6 @@ private struct DayChevron: View {
 private struct Header: View {
     let date: Date
     let source: TimesSource
-    let isRefreshing: Bool
 
     var body: some View {
         HStack(alignment: .top) {
@@ -145,10 +179,6 @@ private struct Header: View {
                     .padding(.top, 6)
             }
             Spacer()
-            if isRefreshing {
-                ProgressView()
-                    .padding(.trailing, 8)
-            }
             SettingsButton()
                 .font(.title3)
         }
@@ -168,6 +198,7 @@ private struct SunPathDial: View {
     @AnimatableIgnored var next: PrayerTime
     @AnimatableIgnored var now: Date
     var launch: Double
+    @AnimatableIgnored var spin: Double
     @AnimatableIgnored var ripple: Double
     @AnimatableIgnored var rippleAt: Date?
 
@@ -218,7 +249,7 @@ private struct SunPathDial: View {
 
             let isDay = now >= path.sunrise && now < path.maghrib
             context.fill(
-                Path(ellipseIn: circle(around: point(at: sunAngle), radius: 13, scale: scale)),
+                Path(ellipseIn: circle(around: point(at: sunAngle - 360 * spin), radius: 13, scale: scale)),
                 with: .color(isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device))
             )
 
