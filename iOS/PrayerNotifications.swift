@@ -14,25 +14,41 @@ enum PrayerNotifications {
         center.removeAllPendingNotificationRequests()
 
         guard let response = cache.load() else { return }
-        let times = response.days
+        let reminder = NotificationSettings.reminderMinutes
+        let alerts = response.days
             .flatMap(\.times)
-            .filter { $0.begins > now && NotificationSettings.isEnabled($0.prayer) }
+            .filter { NotificationSettings.isEnabled($0.prayer) }
+            .flatMap { time in
+                Set([0, reminder]).map { Alert(time: time, minutesBefore: $0) }
+            }
+            .filter { $0.date > now }
+            .sorted { $0.date < $1.date }
             .prefix(limit)
 
-        for time in times {
-            try? await center.add(request(for: time))
+        for alert in alerts {
+            try? await center.add(alert.request)
         }
     }
+}
 
-    private static func request(for time: PrayerTime) -> UNNotificationRequest {
+private struct Alert {
+    let time: PrayerTime
+    let minutesBefore: Int
+
+    var date: Date {
+        time.begins.addingTimeInterval(-Double(minutesBefore) * 60)
+    }
+
+    var request: UNNotificationRequest {
+        let begins = time.begins.formatted(date: .omitted, time: .shortened)
         let content = UNMutableNotificationContent()
         content.title = time.prayer.name
-        content.body = "Begins at \(time.begins.formatted(date: .omitted, time: .shortened))"
+        content.body = minutesBefore == 0 ? "Begins at \(begins)" : "Begins in \(minutesBefore) minutes, at \(begins)"
         content.sound = .default
 
-        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: time.begins)
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-        let identifier = "\(time.prayer.rawValue)-\(Int(time.begins.timeIntervalSince1970))"
+        let identifier = "\(time.prayer.rawValue)-\(Int(time.begins.timeIntervalSince1970))-\(minutesBefore)"
         return UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
     }
 }

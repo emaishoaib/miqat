@@ -2,6 +2,13 @@ import PrayerKit
 import SwiftUI
 
 enum NotificationSettings {
+    static let reminderKey = "reminderMinutes"
+    static let reminderOptions = [0, 5, 10, 15, 20, 30]
+
+    static var reminderMinutes: Int {
+        UserDefaults.standard.integer(forKey: reminderKey)
+    }
+
     static func key(for prayer: Prayer) -> String {
         "notifies.\(prayer.rawValue)"
     }
@@ -39,6 +46,9 @@ private struct SettingsView: View {
                         PrayerToggle(prayer: prayer)
                     }
                 }
+                Section {
+                    ReminderPicker()
+                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -73,5 +83,23 @@ private struct PrayerToggle: View {
                     await PrayerNotifications.reschedule()
                 }
             }
+    }
+}
+
+private struct ReminderPicker: View {
+    @AppStorage(NotificationSettings.reminderKey) private var minutes = 0
+
+    var body: some View {
+        Picker("Early reminder", selection: $minutes) {
+            ForEach(NotificationSettings.reminderOptions, id: \.self) { option in
+                Text(option == 0 ? "Off" : "\(option) minutes before")
+                    .tag(option)
+            }
+        }
+        .onChange(of: minutes) {
+            Task {
+                await PrayerNotifications.reschedule()
+            }
+        }
     }
 }
