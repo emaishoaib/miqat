@@ -1,0 +1,17 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: [build, --tag, $_IMAGE, server]
+
+  - name: gcr.io/cloud-builders/docker
+    args: [push, $_IMAGE]
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args: [run, deploy, miqat, --image, $_IMAGE, --region, $LOCATION]
+
+substitutions:
+  _IMAGE: ${LOCATION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/miqat:${SHORT_SHA}
+
+options:
+  dynamicSubstitutions: true
+  logging: CLOUD_LOGGING_ONLY
