@@ -179,9 +179,21 @@ private struct Header: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                     .font(.title3.bold())
-                Text(HijriDate.formatted(hijriDate))
-                    .foregroundStyle(Palette.ink.opacity(0.7))
                 Button {
+                    explanation.topic = .hijriDate
+                    explanation.isShown = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(HijriDate.formatted(hijriDate))
+                            .foregroundStyle(Palette.ink.opacity(0.7))
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(Palette.ink.opacity(0.5))
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("About the Hijri date")
+                Button {
+                    explanation.topic = .times
                     explanation.isShown = true
                 } label: {
                     HStack(spacing: 6) {
@@ -194,7 +206,7 @@ private struct Header: View {
                 .buttonStyle(.plain)
                 .padding(.top, 6)
                 .sheet(isPresented: $explanation.isShown) {
-                    TimesExplanationView(source: source)
+                    TimesExplanationView(source: source, topic: explanation.topic)
                 }
             }
             Spacer()
