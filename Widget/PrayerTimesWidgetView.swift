@@ -3,12 +3,16 @@ import SwiftUI
 import WidgetKit
 
 struct PrayerTimesWidgetView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(Appearance.key, store: Appearance.store) private var appearance = Appearance.sun
+
     let entry: PrayerEntry
 
     var body: some View {
         let now = entry.date
         let path = entry.response?.sunPath(on: now)
-        let isDay = path.map { now >= $0.sunrise && now < $0.maghrib } ?? true
+        let sunIsUp = path.map { now >= $0.sunrise && now < $0.maghrib } ?? true
+        let isDay = appearance.usesDayColours(sunIsUp: sunIsUp, systemIsDark: colorScheme == .dark)
 
         Group {
             if let response = entry.response,

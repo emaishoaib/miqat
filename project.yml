@@ -67,6 +67,7 @@ targets:
       - Widget
       - WidgetShared
       - Shared/SunPathDial.swift
+      - Shared/Appearance.swift
     dependencies:
       - package: PrayerKit
     entitlements:

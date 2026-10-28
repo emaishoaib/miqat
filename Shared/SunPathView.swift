@@ -18,7 +18,7 @@ struct SunPathView: View {
     @State private var pulseStart: Date?
     @State private var pulseEnd: Date?
     @State private var systemIsDark = Self.systemIsDark()
-    @AppStorage(Appearance.key) private var appearance = Appearance.sun
+    @AppStorage(Appearance.key, store: Appearance.store) private var appearance = Appearance.sun
 
     var body: some View {
         let path = response.sunPath(on: now)
@@ -107,12 +107,7 @@ struct SunPathView: View {
     }
 
     private func usesDayColours(on path: SunPath?) -> Bool {
-        switch appearance {
-        case .sun: isDay(on: path)
-        case .system: !systemIsDark
-        case .day: true
-        case .night: false
-        }
+        appearance.usesDayColours(sunIsUp: isDay(on: path), systemIsDark: systemIsDark)
     }
 
     #if os(iOS)

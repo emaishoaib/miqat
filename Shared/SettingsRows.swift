@@ -1,7 +1,8 @@
 import SwiftUI
+import WidgetKit
 
 struct AppearancePicker: View {
-    @AppStorage(Appearance.key) private var appearance = Appearance.sun
+    @AppStorage(Appearance.key, store: Appearance.store) private var appearance = Appearance.sun
 
     var body: some View {
         Picker("Appearance", selection: $appearance) {
@@ -13,6 +14,9 @@ struct AppearancePicker: View {
         #if os(macOS)
         .pickerStyle(.radioGroup)
         #endif
+        .onChange(of: appearance) {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
     }
 }
 
