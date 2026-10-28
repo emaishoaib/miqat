@@ -2,23 +2,20 @@ import SwiftUI
 
 @main
 struct MiqatWatchApp: App {
-    @State private var model = TimetableModel()
+    @State private var model = WatchTimetableModel()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             WatchContentView(model: model)
         }
-        .onChange(of: scenePhase, initial: true) { _, phase in
-            switch phase {
-            case .active: Task { await model.load() }
-            case .background: WatchDailyRefresh.schedule()
-            default: break
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await model.refresh() }
             }
         }
-        .backgroundTask(.appRefresh) { _ in
-            await WatchDailyRefresh.schedule()
-            await model.refreshInBackground()
+        .backgroundTask(.watchConnectivity) {
+            await model.receivePendingContent()
         }
     }
 }

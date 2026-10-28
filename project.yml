@@ -116,7 +116,6 @@ targets:
     platform: watchOS
     sources:
       - watchOS
-      - Shared/TimetableModel.swift
       - Shared/SunPathDial.swift
       - Icon/AppIcon.icon
     dependencies:
@@ -128,8 +127,6 @@ targets:
         com.apple.security.application-groups: [group.com.mashoaib.miqat]
     info:
       path: watchOS/Info.plist
-      properties:
-        MiqatServerURL: $(MIQAT_SERVER_SCHEME)://$(MIQAT_SERVER_HOST)
     settings:
       base:
         PRODUCT_NAME: Miqat
@@ -138,8 +135,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Miqat
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mashoaib.miqat
-        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
-        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Miqat uses your location to find prayer times from the mosques nearest to you.
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
         TARGETED_DEVICE_FAMILY: "4"
 
   Miqat-WatchWidget:

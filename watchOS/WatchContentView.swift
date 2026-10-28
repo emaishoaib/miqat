@@ -2,25 +2,24 @@ import PrayerKit
 import SwiftUI
 
 struct WatchContentView: View {
-    let model: TimetableModel
+    let model: WatchTimetableModel
 
     @State private var clock = MinuteClock()
 
     var body: some View {
-        switch model.state {
-        case .loading:
-            ProgressView()
-        case .loaded(let response):
+        if let response = model.response {
             WatchTimetableView(response: response, now: clock.now, isRefreshing: model.isRefreshing) {
-                await model.load()
+                await model.refresh()
             }
-        case .failed(let error):
+        } else if model.isRefreshing {
+            ProgressView()
+        } else {
             ContentUnavailableView {
-                Label("No prayer times", systemImage: "exclamationmark.triangle")
+                Label("No prayer times", systemImage: "iphone")
             } description: {
-                Text(error.localizedDescription)
+                Text("Open Miqat on your iPhone.")
             } actions: {
-                Button("Try Again") { Task { await model.load() } }
+                Button("Try Again") { Task { await model.refresh() } }
             }
         }
     }
