@@ -17,7 +17,7 @@ struct SunPathDial: View {
     static let radius: CGFloat = 95
     static let horizonInset: CGFloat = 18
     static let textGap: CGFloat = 12
-    static let compactTextGap: CGFloat = 5
+    static let compactTextGap: CGFloat = 13
 
     @AnimatableIgnored var day: PrayerDay
     @AnimatableIgnored var path: SunPath
@@ -90,11 +90,11 @@ struct SunPathDial: View {
 
             let x = Self.center.x * scale
             let horizonY = Self.center.y * scale
-            let name = context.resolve(Text(next.prayer.name).font(isCompact ? .system(size: 13, weight: .semibold) : .title.weight(.semibold)).foregroundStyle(Palette.ink))
+            let name = context.resolve(Text(next.prayer.name).font(isCompact ? .system(size: 32 * scale, weight: .semibold) : .title.weight(.semibold)).foregroundStyle(Palette.ink))
             let isSoon = PrayerUrgency(timeUntilNext: next.begins.timeIntervalSince(now)) != .normal
             let countdownColor = isSoon ? (usesDayColours ? Palette.dayRed : Palette.nightRed) : Palette.gold
-            let countdown = context.resolve(Text(Self.countdown(to: next.begins, from: now)).font(isCompact ? .system(size: 11, weight: .semibold) : .headline).foregroundStyle(countdownColor))
-            let gap = isCompact ? Self.compactTextGap : Self.textGap
+            let countdown = context.resolve(Text(Self.countdown(to: next.begins, from: now)).font(isCompact ? .system(size: 28 * scale, weight: .semibold) : .headline).foregroundStyle(countdownColor))
+            let gap = isCompact ? Self.compactTextGap * scale : Self.textGap
             context.draw(name, at: CGPoint(x: x, y: horizonY - gap), anchor: .bottom)
             context.draw(countdown, at: CGPoint(x: x, y: horizonY + gap), anchor: .top)
 

@@ -116,6 +116,7 @@ targets:
     sources:
       - watchOS
       - Shared/TimetableModel.swift
+      - Shared/SunPathDial.swift
       - Icon/AppIcon.icon
     dependencies:
       - package: PrayerKit
