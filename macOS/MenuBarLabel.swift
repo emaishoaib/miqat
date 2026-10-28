@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 enum MenuBarLabel {
-    static func image(for status: MenuBarStatus) -> NSImage {
+    static func image(for status: MenuBarStatus, appearance: NSAppearance?) -> NSImage {
         let defaults = UserDefaults.standard
         let showsDate = defaults.bool(forKey: MenuBarDate.showsKey)
         let calendar = defaults.string(forKey: MenuBarDate.calendarKey).flatMap(MenuBarDate.init) ?? .gregorian
@@ -16,7 +16,8 @@ enum MenuBarLabel {
                time: status.detail,
                style: status.style,
                date: showsDate ? calendar.lines(for: status.today) : nil,
-               size: size
+               size: size,
+               appearance: appearance
            ) {
             return image
         }
@@ -25,13 +26,13 @@ enum MenuBarLabel {
         return fallback
     }
 
-    private static func image(name: String, time: String, style: MenuBarStatus.Style, date: (weekday: String, day: String)?, size: MenuBarSize) -> NSImage? {
+    private static func image(name: String, time: String, style: MenuBarStatus.Style, date: (weekday: String, day: String)?, size: MenuBarSize, appearance: NSAppearance?) -> NSImage? {
         let prayerColor: Color = switch style {
         case .normal: .black
         case .alert: Color(nsColor: .systemRed)
         case .alertDimmed: Color(nsColor: .systemRed).opacity(0.25)
         }
-        let dateColor: Color = style == .normal ? .black : menuBarTextColor
+        let dateColor: Color = style == .normal ? .black : textColor(on: appearance)
 
         let renderer = ImageRenderer(
             content: HStack(spacing: size == .compact ? 8 : 6) {
@@ -77,7 +78,8 @@ enum MenuBarLabel {
         }
     }
 
-    private static var menuBarTextColor: Color {
-        NSApplication.shared.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .white : .black
+    private static func textColor(on appearance: NSAppearance?) -> Color {
+        let isDark = (appearance ?? NSApplication.shared.effectiveAppearance).bestMatch(from: [.aqua, .darkAqua, .vibrantLight, .vibrantDark]).map { [.darkAqua, .vibrantDark].contains($0) } ?? false
+        return isDark ? .white : .black
     }
 }

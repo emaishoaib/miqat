@@ -69,7 +69,7 @@ final class StatusItemController: NSObject {
     }
 
     private func updateImage() {
-        statusItem.button?.image = MenuBarLabel.image(for: status)
+        statusItem.button?.image = MenuBarLabel.image(for: status, appearance: statusItem.button?.effectiveAppearance)
     }
 
     private var width: CGFloat {
