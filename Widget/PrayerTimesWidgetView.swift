@@ -27,21 +27,7 @@ struct PrayerTimesWidgetView: View {
                             .frame(width: 118)
                         PrayerGrid(day: listed, next: next, now: now)
                     }
-                    HStack(alignment: .top) {
-                        DateCorner(
-                            day: listed.date.formatted(.dateTime.day()),
-                            month: listed.date.formatted(.dateTime.month(.abbreviated)),
-                            year: listed.date.formatted(.dateTime.year()),
-                            alignment: .leading
-                        )
-                        Spacer()
-                        DateCorner(
-                            day: HijriDate.day(listed.date),
-                            month: HijriDate.shortMonth(listed.date),
-                            year: String(HijriDate.year(listed.date)),
-                            alignment: .trailing
-                        )
-                    }
+                    HijriDateCorners(date: listed.date)
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 9)
@@ -60,24 +46,30 @@ struct PrayerTimesWidgetView: View {
     }
 }
 
-private struct DateCorner: View {
-    let day: String
-    let month: String
-    let year: String
-    let alignment: HorizontalAlignment
+private struct HijriDateCorners: View {
+    let date: Date
 
     var body: some View {
-        VStack(alignment: alignment, spacing: 0) {
-            Text(day)
-                .font(.system(size: 15, weight: .semibold))
-            Text(month)
-                .font(.system(size: 11))
-                .opacity(0.75)
-            Text(year)
-                .font(.system(size: 11))
-                .opacity(0.5)
+        HStack(alignment: .top) {
+            Text(HijriDate.day(date))
+                .font(.system(size: 24, weight: .semibold))
+                .alignmentGuide(.top) { $0[.firstTextBaseline] - Self.capHeight(size: 24, weight: .semibold) }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(HijriDate.shortMonth(date))
+                    .opacity(0.75)
+                Text(String(HijriDate.year(date)))
+                    .opacity(0.5)
+            }
+            .font(.system(size: 11))
+            .alignmentGuide(.top) { $0[.firstTextBaseline] - Self.capHeight(size: 11, weight: .regular) }
         }
         .lineLimit(1)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private static func capHeight(size: CGFloat, weight: UIFont.Weight) -> CGFloat {
+        UIFont.systemFont(ofSize: size, weight: weight).capHeight
     }
 }
 
