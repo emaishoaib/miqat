@@ -7,6 +7,7 @@ struct MenuBarLabel: View {
 
     @AppStorage(MenuBarDate.showsKey) private var showsDate = false
     @AppStorage(MenuBarDate.calendarKey) private var calendar = MenuBarDate.gregorian
+    @AppStorage(MenuBarSize.key) private var size = MenuBarSize.compact
 
     var body: some View {
         if let next = status.next,
@@ -14,7 +15,8 @@ struct MenuBarLabel: View {
                name: next.prayer.name,
                time: status.detail,
                style: status.style,
-               date: showsDate ? calendar.lines(for: status.today) : nil
+               date: showsDate ? calendar.lines(for: status.today) : nil,
+               size: size
            ) {
             Image(nsImage: image)
         } else {
@@ -22,7 +24,7 @@ struct MenuBarLabel: View {
         }
     }
 
-    private static func image(name: String, time: String, style: MenuBarStatus.Style, date: (weekday: String, day: String)?) -> NSImage? {
+    private static func image(name: String, time: String, style: MenuBarStatus.Style, date: (weekday: String, day: String)?, size: MenuBarSize) -> NSImage? {
         let prayerColor: Color = switch style {
         case .normal: .black
         case .alert: Color(nsColor: .systemRed)
@@ -31,11 +33,16 @@ struct MenuBarLabel: View {
         let dateColor: Color = style == .normal ? .black : menuBarTextColor
 
         let renderer = ImageRenderer(
-            content: HStack(spacing: 8) {
-                lines(top: name, bottom: time)
+            content: HStack(spacing: size == .compact ? 8 : 6) {
+                part(top: name, bottom: time, size: size)
                     .foregroundStyle(prayerColor)
                 if let date {
-                    lines(top: date.weekday, bottom: date.day)
+                    if size == .large {
+                        Text(verbatim: "·")
+                            .font(.system(size: 13))
+                            .foregroundStyle(dateColor)
+                    }
+                    part(top: date.weekday, bottom: date.day, size: size)
                         .foregroundStyle(dateColor)
                 }
             }
@@ -47,13 +54,25 @@ struct MenuBarLabel: View {
         return image
     }
 
-    private static func lines(top: String, bottom: String) -> some View {
-        VStack(alignment: .center, spacing: -2.5) {
-            Text(top)
-                .font(.system(size: 11.5, weight: .semibold))
-            Text(bottom)
-                .font(.system(size: 11.5))
-                .monospacedDigit()
+    @ViewBuilder
+    private static func part(top: String, bottom: String, size: MenuBarSize) -> some View {
+        switch size {
+        case .compact:
+            VStack(alignment: .center, spacing: -2.5) {
+                Text(top)
+                    .font(.system(size: 11.5, weight: .semibold))
+                Text(bottom)
+                    .font(.system(size: 11.5))
+                    .monospacedDigit()
+            }
+        case .large:
+            HStack(spacing: 4) {
+                Text(top)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(bottom)
+                    .font(.system(size: 13))
+                    .monospacedDigit()
+            }
         }
     }
 

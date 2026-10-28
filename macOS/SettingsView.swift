@@ -40,6 +40,7 @@ struct SettingsView: View {
                     AppearancePicker()
                 }
                 Section("Menu bar") {
+                    MenuBarSizePicker()
                     MenuBarDatePicker()
                 }
                 Section {
@@ -72,5 +73,19 @@ private struct MenuBarDatePicker: View {
         }
         .pickerStyle(.radioGroup)
         .disabled(!showsDate)
+    }
+}
+
+private struct MenuBarSizePicker: View {
+    @AppStorage(MenuBarSize.key) private var size = MenuBarSize.compact
+
+    var body: some View {
+        Picker("Size", selection: $size) {
+            ForEach(MenuBarSize.allCases, id: \.self) { option in
+                Text(option.name)
+                    .tag(option)
+            }
+        }
+        .pickerStyle(.radioGroup)
     }
 }
