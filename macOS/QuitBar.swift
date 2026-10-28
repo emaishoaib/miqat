@@ -1,6 +1,10 @@
 import AppKit
 import SwiftUI
 
+extension EnvironmentValues {
+    @Entry var quitBarHeight: CGFloat = 0
+}
+
 struct QuitBar: View {
     var body: some View {
         HStack {

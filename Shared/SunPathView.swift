@@ -33,6 +33,7 @@ struct SunPathView: View {
     @AppStorage(Appearance.key) private var appearance = Appearance.sun
     #if os(macOS)
     @AppStorage(MenuBarDate.showsKey) private var showsDate = false
+    @Environment(\.quitBarHeight) private var quitBarHeight
     #endif
 
     var body: some View {
@@ -109,6 +110,7 @@ struct SunPathView: View {
                 Rectangle()
                     .fill(Palette.ink.opacity(0.15))
                     .frame(width: 0.5)
+                    .padding(.top, quitBarHeight)
                 CalendarView()
             }
             #endif
