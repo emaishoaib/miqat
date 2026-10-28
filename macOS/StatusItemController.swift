@@ -47,7 +47,9 @@ final class StatusItemController: NSObject {
 
     @objc private func defaultsChanged() {
         updateImage()
-        resize()
+        DispatchQueue.main.async { [weak self] in
+            self?.resize()
+        }
     }
 
     private func updateImage() {
@@ -70,13 +72,19 @@ final class StatusItemController: NSObject {
         }
     }
 
-    private func resize() {
-        guard panel.isVisible, panel.frame.width != width else { return }
-        var frame = panel.frame
-        frame.size.width = width
-        if let screen = panel.screen?.visibleFrame {
-            frame.origin.x = min(frame.origin.x, screen.maxX - width - Self.screenMargin)
+    private func frame() -> NSRect {
+        let icon = iconFrame
+        let alignment = UserDefaults.standard.string(forKey: PopUpAlignment.key).flatMap(PopUpAlignment.init) ?? .center
+        var x = alignment.x(width: width, under: icon)
+        if let screen = statusItem.button?.window?.screen?.visibleFrame {
+            x = min(max(x, screen.minX + Self.screenMargin), screen.maxX - width - Self.screenMargin)
         }
+        return NSRect(x: x, y: icon.minY - Self.gap - PopUpContent.height, width: width, height: PopUpContent.height)
+    }
+
+    private func resize() {
+        let frame = frame()
+        guard panel.isVisible, panel.frame != frame else { return }
         NSAnimationContext.runAnimationGroup { context in
             context.duration = Self.resizeDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
@@ -100,17 +108,11 @@ final class StatusItemController: NSObject {
     }
 
     private func show() {
-        guard let button = statusItem.button, let buttonWindow = button.window else { return }
+        guard let button = statusItem.button else { return }
         SettingsPage.shared.isShown = false
         status.acknowledge()
 
-        let size = NSSize(width: width, height: PopUpContent.height)
-        let icon = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        var x = icon.midX - size.width / 2
-        if let screen = buttonWindow.screen?.visibleFrame {
-            x = min(max(x, screen.minX + Self.screenMargin), screen.maxX - size.width - Self.screenMargin)
-        }
-        panel.setFrame(NSRect(x: x, y: icon.minY - Self.gap - size.height, width: size.width, height: size.height), display: true)
+        panel.setFrame(frame(), display: true)
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
         if #unavailable(macOS 27) {

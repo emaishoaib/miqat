@@ -41,6 +41,7 @@ struct SettingsView: View {
                 }
                 Section("Menu bar") {
                     MenuBarSizePicker()
+                    PopUpAlignmentPicker()
                     MenuBarDatePicker()
                 }
                 Section {
@@ -82,6 +83,20 @@ private struct MenuBarSizePicker: View {
     var body: some View {
         Picker("Size", selection: $size) {
             ForEach(MenuBarSize.allCases, id: \.self) { option in
+                Text(option.name)
+                    .tag(option)
+            }
+        }
+        .pickerStyle(.radioGroup)
+    }
+}
+
+private struct PopUpAlignmentPicker: View {
+    @AppStorage(PopUpAlignment.key) private var alignment = PopUpAlignment.center
+
+    var body: some View {
+        Picker("Pop-up", selection: $alignment) {
+            ForEach(PopUpAlignment.allCases, id: \.self) { option in
                 Text(option.name)
                     .tag(option)
             }
