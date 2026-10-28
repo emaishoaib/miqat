@@ -11,7 +11,7 @@ struct NextPrayerRectangularView: View {
 
         HStack(spacing: 6) {
             if let path = response.sunPath(on: date), let today = response.day(containing: date) {
-                SunPathDial(day: today, path: path, next: next, now: date, usesDayColours: false, launch: 1, ripple: 1, rippleAt: nil, showsText: false)
+                SunPathDial(day: today, path: path, next: next, now: date, usesDayColours: false, launch: 1, ripple: 1, rippleAt: nil, showsText: false, weight: 2)
                     .frame(width: 54)
             }
             VStack(alignment: .leading, spacing: 0) {

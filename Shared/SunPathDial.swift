@@ -29,6 +29,7 @@ struct SunPathDial: View {
     @AnimatableIgnored var rippleAt: Date?
     @AnimatableIgnored var isCompact = false
     @AnimatableIgnored var showsText = true
+    @AnimatableIgnored var weight: CGFloat = 1
 
     var body: some View {
         Canvas { context, size in
@@ -37,7 +38,7 @@ struct SunPathDial: View {
             context.stroke(
                 Path(ellipseIn: circle(around: Self.center, radius: Self.radius, scale: scale)),
                 with: .color(Palette.ink.opacity(0.5)),
-                style: StrokeStyle(lineWidth: 2 * scale, dash: [3 * scale, 6 * scale])
+                style: StrokeStyle(lineWidth: 2 * weight * scale, dash: [3 * weight * scale, 6 * weight * scale])
             )
 
             let sunAngle = path.angle(at: now)
@@ -54,24 +55,24 @@ struct SunPathDial: View {
                     endAngle: .degrees(-sunAngle + Self.travel(from: sunAngle, to: path.angle(at: next.begins)) * arcGrowth),
                     clockwise: false
                 )
-                context.stroke(remaining, with: .color(Palette.gold), style: StrokeStyle(lineWidth: 3 * scale, lineCap: .round))
+                context.stroke(remaining, with: .color(Palette.gold), style: StrokeStyle(lineWidth: 3 * weight * scale, lineCap: .round))
             }
 
             var horizon = Path()
             horizon.move(to: CGPoint(x: Self.horizonInset * scale, y: Self.center.y * scale))
             horizon.addLine(to: CGPoint(x: (Self.canvas.width - Self.horizonInset) * scale, y: Self.center.y * scale))
-            context.stroke(horizon, with: .color(Palette.ink), style: StrokeStyle(lineWidth: 3 * scale, lineCap: .round))
+            context.stroke(horizon, with: .color(Palette.ink), style: StrokeStyle(lineWidth: 3 * weight * scale, lineCap: .round))
 
             for time in day.times.map({ $0.prayer == next.prayer ? next : $0 }) {
-                let dot = circle(around: point(at: path.angle(at: time.begins)), radius: 5, scale: scale)
+                let dot = circle(around: point(at: path.angle(at: time.begins)), radius: 5 * weight, scale: scale)
                 context.fill(Path(ellipseIn: dot), with: .color(Palette.ink.opacity(time.begins <= now ? 0.4 : 1)))
             }
 
             if ringGrowth > 0 {
                 context.stroke(
-                    Path(ellipseIn: circle(around: point(at: path.angle(at: next.begins)), radius: 10 * ringGrowth, scale: scale)),
+                    Path(ellipseIn: circle(around: point(at: path.angle(at: next.begins)), radius: 10 * weight * ringGrowth, scale: scale)),
                     with: .color(Palette.gold),
-                    lineWidth: 2 * scale
+                    lineWidth: 2 * weight * scale
                 )
             }
 
@@ -85,7 +86,7 @@ struct SunPathDial: View {
 
             let isDay = now >= path.sunrise && now < path.maghrib
             context.fill(
-                Path(ellipseIn: circle(around: point(at: sunAngle), radius: 13 * sunGrowth, scale: scale)),
+                Path(ellipseIn: circle(around: point(at: sunAngle), radius: 13 * weight * sunGrowth, scale: scale)),
                 with: .color((isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device)).opacity(sunGrowth))
             )
 
