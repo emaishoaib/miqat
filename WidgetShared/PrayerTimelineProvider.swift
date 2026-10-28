@@ -7,6 +7,10 @@ struct PrayerEntry: TimelineEntry {
 }
 
 struct PrayerTimelineProvider: TimelineProvider {
+    private static let minuteEntries = 120
+
+    var updatesEveryMinute = false
+
     func placeholder(in context: Context) -> PrayerEntry {
         PrayerEntry(date: .now, response: Self.sample)
     }
@@ -19,9 +23,15 @@ struct PrayerTimelineProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerEntry>) -> Void) {
         let now = Date.now
         let response = TimetableCache.shared.load()
-        let prayerStarts = response?.days.flatMap(\.times).filter(\.prayer.isPrayer).map(\.begins) ?? []
-        let dayStarts = response?.days.map(\.date) ?? []
-        let changes = Set(prayerStarts + dayStarts).filter { $0 > now }.sorted()
+        let changes: [Date]
+        if updatesEveryMinute {
+            let minute = Calendar.current.dateInterval(of: .minute, for: now)?.start ?? now
+            changes = (1...Self.minuteEntries).compactMap { Calendar.current.date(byAdding: .minute, value: $0, to: minute) }
+        } else {
+            let prayerStarts = response?.days.flatMap(\.times).filter(\.prayer.isPrayer).map(\.begins) ?? []
+            let dayStarts = response?.days.map(\.date) ?? []
+            changes = Set(prayerStarts + dayStarts).filter { $0 > now }.sorted()
+        }
 
         let entries = ([now] + changes).map { PrayerEntry(date: $0, response: response) }
         completion(Timeline(entries: entries, policy: .atEnd))

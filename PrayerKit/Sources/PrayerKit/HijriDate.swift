@@ -15,6 +15,10 @@ public enum HijriDate {
         date.formatted(Date.FormatStyle(locale: locale, calendar: calendar).month(.wide))
     }
 
+    public static func shortMonth(_ date: Date, locale: Locale = .current) -> String {
+        date.formatted(Date.FormatStyle(locale: locale, calendar: calendar).month(.abbreviated))
+    }
+
     public static func monthNumber(_ date: Date, timeZone: TimeZone = .current) -> Int {
         calendar(in: timeZone).component(.month, from: date)
     }
