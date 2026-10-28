@@ -7,6 +7,7 @@ final class StatusItemController: NSObject {
     private static let gap: CGFloat = 6
     private static let screenMargin: CGFloat = 8
     private static let resizeDuration: TimeInterval = 0.3
+    private static let reopenGuard: TimeInterval = 0.3
 
     private let model = TimetableModel()
     private let status: MenuBarStatus
@@ -14,6 +15,7 @@ final class StatusItemController: NSObject {
     private let content: NSHostingController<PopUpContent>
     private let panel = PopUpPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
     private var clickMonitor: Any?
+    private var hiddenAt = Date.distantPast
 
     override init() {
         status = MenuBarStatus(model: model)
@@ -104,7 +106,11 @@ final class StatusItemController: NSObject {
     }
 
     @objc private func toggle() {
-        panel.isVisible ? hide() : show()
+        if panel.isVisible {
+            hide()
+        } else if Date.now.timeIntervalSince(hiddenAt) > Self.reopenGuard {
+            show()
+        }
     }
 
     private func show() {
@@ -123,8 +129,7 @@ final class StatusItemController: NSObject {
 
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, !self.iconFrame.contains(NSEvent.mouseLocation) else { return }
-                self.dismiss()
+                self?.dismiss()
             }
         }
     }
@@ -143,6 +148,9 @@ final class StatusItemController: NSObject {
     }
 
     private func hide() {
+        if panel.isVisible {
+            hiddenAt = .now
+        }
         panel.orderOut(nil)
         if #unavailable(macOS 27) {
             DispatchQueue.main.async { [weak self] in
@@ -159,6 +167,10 @@ final class StatusItemController: NSObject {
 @available(macOS 27, *)
 extension StatusItemController: @MainActor NSStatusItemExpandedInterfaceDelegate {
     func statusItem(_ statusItem: NSStatusItem, didBegin expandedInterfaceSession: NSStatusItemExpandedInterfaceSession) {
+        guard Date.now.timeIntervalSince(hiddenAt) > Self.reopenGuard else {
+            expandedInterfaceSession.cancel()
+            return
+        }
         show()
     }
 
