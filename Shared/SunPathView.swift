@@ -3,7 +3,6 @@ import SwiftUI
 
 struct SunPathView: View {
     private static let margin: CGFloat = 20
-    private static let pulseCycle: TimeInterval = 1.0
 
     let response: PrayerTimesResponse
     let now: Date
@@ -15,8 +14,7 @@ struct SunPathView: View {
     @State private var launch: Double = hasGrownIn ? 1 : 0
     @State private var rippleAt: Date?
     @State private var dayOffset = 0
-    @State private var pulseStart: Date?
-    @State private var pulseEnd: Date?
+    @State private var isRefreshing = false
     @State private var systemIsDark = Self.systemIsDark()
     @AppStorage(Appearance.key, store: Appearance.store) private var appearance = Appearance.sun
 
@@ -30,17 +28,15 @@ struct SunPathView: View {
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, source: response.source) {
-                    await refreshWithPulse()
+                Header(date: shown?.date ?? now, source: response.source, isRefreshing: isRefreshing) {
+                    await refreshShowingProgress()
                 }
                 if let path, let next, let today {
-                    TimelineView(.animation(paused: pulseStart == nil)) { timeline in
-                        KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
-                            SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: usesDayColours(on: path), launch: launch, pulse: pulse(at: timeline.date), ripple: ripple, rippleAt: rippleAt)
-                        } keyframes: { _ in
-                            MoveKeyframe(0)
-                            LinearKeyframe(1, duration: 0.9)
-                        }
+                    KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
+                        SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: usesDayColours(on: path), launch: launch, ripple: ripple, rippleAt: rippleAt)
+                    } keyframes: { _ in
+                        MoveKeyframe(0)
+                        LinearKeyframe(1, duration: 0.9)
                     }
                     .onAppear {
                         guard !Self.hasGrownIn else { return }
@@ -82,7 +78,7 @@ struct SunPathView: View {
         }
         #if os(iOS)
         .pullToRefresh {
-            await refreshWithPulse()
+            await refreshShowingProgress()
         }
         #endif
         .onChange(of: next?.begins) { began, _ in
@@ -138,37 +134,11 @@ struct SunPathView: View {
         }
     }
 
-    private func pulse(at date: Date) -> Double {
-        guard let pulseStart else { return 0 }
-        if let pulseEnd, date >= pulseEnd { return 0 }
-        return (date.timeIntervalSince(pulseStart) / Self.pulseCycle).truncatingRemainder(dividingBy: 1)
-    }
-
-    private func refreshWithPulse() async {
-        startPulse()
+    private func refreshShowingProgress() async {
+        guard !isRefreshing else { return }
+        isRefreshing = true
         await refresh()
-        finishPulse()
-    }
-
-    private func startPulse() {
-        pulseEnd = nil
-        if pulseStart == nil {
-            pulseStart = .now
-        }
-    }
-
-    private func finishPulse() {
-        guard let pulseStart else { return }
-        let beats = max(1, (Date.now.timeIntervalSince(pulseStart) / Self.pulseCycle).rounded(.up))
-        let end = pulseStart.addingTimeInterval(beats * Self.pulseCycle)
-        pulseEnd = end
-        Task {
-            try? await Task.sleep(for: .seconds(end.timeIntervalSinceNow))
-            if pulseEnd == end {
-                self.pulseStart = nil
-                pulseEnd = nil
-            }
-        }
+        isRefreshing = false
     }
 }
 
@@ -198,6 +168,7 @@ private struct DayChevron: View {
 private struct Header: View {
     let date: Date
     let source: TimesSource
+    let isRefreshing: Bool
     let refresh: () async -> Void
 
     @State private var explanation = TimesExplanation.shared
@@ -232,9 +203,18 @@ private struct Header: View {
                         await refresh()
                     }
                 } label: {
-                    Image(systemName: "arrow.clockwise")
+                    Group {
+                        if isRefreshing {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.borderless)
+                .disabled(isRefreshing)
                 .accessibilityLabel("Refresh prayer times")
                 SettingsButton()
             }

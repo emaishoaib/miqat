@@ -23,7 +23,7 @@ struct PrayerTimesWidgetView: View {
                 ZStack(alignment: .top) {
                     VStack(spacing: 2) {
                         Spacer(minLength: 0)
-                        SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: isDay, launch: 1, pulse: 0, ripple: 1, rippleAt: nil, isCompact: true)
+                        SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: isDay, launch: 1, ripple: 1, rippleAt: nil, isCompact: true)
                             .frame(width: 118)
                         PrayerGrid(day: listed, next: next, now: now)
                     }

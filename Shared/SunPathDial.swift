@@ -25,7 +25,6 @@ struct SunPathDial: View {
     @AnimatableIgnored var now: Date
     @AnimatableIgnored var usesDayColours: Bool
     var launch: Double
-    @AnimatableIgnored var pulse: Double
     @AnimatableIgnored var ripple: Double
     @AnimatableIgnored var rippleAt: Date?
     @AnimatableIgnored var isCompact = false
@@ -85,7 +84,7 @@ struct SunPathDial: View {
 
             let isDay = now >= path.sunrise && now < path.maghrib
             context.fill(
-                Path(ellipseIn: circle(around: point(at: sunAngle), radius: (13 + 3 * (1 - cos(2 * .pi * pulse)) / 2) * sunGrowth, scale: scale)),
+                Path(ellipseIn: circle(around: point(at: sunAngle), radius: 13 * sunGrowth, scale: scale)),
                 with: .color((isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device)).opacity(sunGrowth))
             )
 
