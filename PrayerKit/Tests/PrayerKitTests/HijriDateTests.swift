@@ -21,4 +21,35 @@ struct HijriDateTests {
     @Test func yearIsTheHijriYear() {
         #expect(HijriDate.year(date) == 1448)
     }
+
+    var utc: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        return calendar
+    }
+
+    func time(_ text: String) -> Date {
+        ISO8601DateFormatter().date(from: text)!
+    }
+
+    var day: PrayerDay {
+        PrayerDay(date: time("2026-10-24T00:00:00Z"), times: [
+            PrayerTime(prayer: .fajr, begins: time("2026-10-24T05:30:00Z")),
+            PrayerTime(prayer: .maghrib, begins: time("2026-10-24T17:50:00Z")),
+            PrayerTime(prayer: .isha, begins: time("2026-10-24T19:20:00Z")),
+        ])
+    }
+
+    @Test func beforeMaghribTheHijriDateFollowsTheDay() {
+        #expect(day.hijriDate(at: time("2026-10-24T17:49:00Z"), calendar: utc) == time("2026-10-24T00:00:00Z"))
+    }
+
+    @Test func fromMaghribTheHijriDateMovesToTheNextDay() {
+        #expect(day.hijriDate(at: time("2026-10-24T17:50:00Z"), calendar: utc) == time("2026-10-25T00:00:00Z"))
+        #expect(day.hijriDate(at: time("2026-10-24T23:59:00Z"), calendar: utc) == time("2026-10-25T00:00:00Z"))
+    }
+
+    @Test func anotherDayKeepsItsOwnHijriDate() {
+        #expect(day.hijriDate(at: time("2026-10-25T20:00:00Z"), calendar: utc) == time("2026-10-24T00:00:00Z"))
+    }
 }
