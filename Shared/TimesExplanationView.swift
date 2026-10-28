@@ -96,11 +96,6 @@ struct TimesExplanationView: View {
                 )
             }
         }
-
-        Paragraph(
-            title: "The Hijri date",
-            text: "The Hijri date follows the Umm al-Qura calendar."
-        )
     }
 }
 
