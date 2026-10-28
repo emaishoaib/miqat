@@ -34,7 +34,7 @@ struct WatchTimetableView: View {
 
                 if let listed {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(HijriDate.formatted(listed.date))
+                        Text(HijriDate.formatted(listed.hijriDate(at: now)))
                             .font(.footnote)
                             .foregroundStyle(Palette.ink.opacity(0.6))
                             .padding(.bottom, 4)

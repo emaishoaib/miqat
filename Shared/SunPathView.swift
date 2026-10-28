@@ -28,7 +28,7 @@ struct SunPathView: View {
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, source: response.source, isRefreshing: isRefreshing) {
+                Header(date: shown?.date ?? now, hijriDate: shown?.hijriDate(at: now) ?? now, source: response.source, isRefreshing: isRefreshing) {
                     await refreshShowingProgress()
                 }
                 if let path, let next, let today {
@@ -167,6 +167,7 @@ private struct DayChevron: View {
 
 private struct Header: View {
     let date: Date
+    let hijriDate: Date
     let source: TimesSource
     let isRefreshing: Bool
     let refresh: () async -> Void
@@ -178,7 +179,7 @@ private struct Header: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                     .font(.title3.bold())
-                Text(HijriDate.formatted(date))
+                Text(HijriDate.formatted(hijriDate))
                     .foregroundStyle(Palette.ink.opacity(0.7))
                 Button {
                     explanation.isShown = true

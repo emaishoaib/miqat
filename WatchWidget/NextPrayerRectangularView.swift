@@ -7,7 +7,7 @@ struct NextPrayerRectangularView: View {
     let date: Date
 
     var body: some View {
-        let listed = response.day(containing: next.begins)?.date ?? date
+        let hijriDate = response.day(containing: next.begins)?.hijriDate(at: date) ?? date
 
         HStack(spacing: 6) {
             if let path = response.sunPath(on: date), let today = response.day(containing: date) {
@@ -26,12 +26,12 @@ struct NextPrayerRectangularView: View {
             }
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 0) {
-                Text(HijriDate.day(listed))
+                Text(HijriDate.day(hijriDate))
                     .font(.system(size: 15, weight: .semibold))
-                Text(HijriDate.shortMonth(listed))
+                Text(HijriDate.shortMonth(hijriDate))
                     .font(.system(size: 13))
                     .opacity(0.75)
-                Text(String(HijriDate.year(listed)))
+                Text(String(HijriDate.year(hijriDate)))
                     .font(.system(size: 13))
                     .opacity(0.5)
             }

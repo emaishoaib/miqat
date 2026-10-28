@@ -27,7 +27,7 @@ struct PrayerTimesWidgetView: View {
                             .frame(width: 118)
                         PrayerGrid(day: listed, next: next, now: now)
                     }
-                    HijriDateCorners(date: listed.date)
+                    HijriDateCorners(date: listed.hijriDate(at: now))
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 9)
