@@ -3,34 +3,20 @@ import SwiftUI
 
 @main
 struct MiqatMacApp: App {
-    @State private var model: TimetableModel
-    @State private var status: MenuBarStatus
-    @State private var settings = SettingsPage.shared
-    @AppStorage(MenuBarDate.showsKey) private var showsDate = false
-
-    init() {
-        let model = TimetableModel()
-        _model = State(initialValue: model)
-        _status = State(initialValue: MenuBarStatus(model: model))
-        Task { await model.load() }
-    }
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra {
-            ZStack {
-                TimetableScreen(model: model)
-                if settings.isShown {
-                    SettingsView()
-                }
-            }
-            .frame(width: showsDate ? 360 + CalendarView.width : 360, height: 680)
-            .onAppear {
-                status.acknowledge()
-                settings.isShown = false
-            }
-        } label: {
-            MenuBarLabel(status: status)
+        Settings {
+            EmptyView()
         }
-        .menuBarExtraStyle(.window)
+    }
+}
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var statusItem: StatusItemController?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        statusItem = StatusItemController()
     }
 }

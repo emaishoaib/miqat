@@ -2,26 +2,27 @@ import AppKit
 import PrayerKit
 import SwiftUI
 
-struct MenuBarLabel: View {
-    let status: MenuBarStatus
+@MainActor
+enum MenuBarLabel {
+    static func image(for status: MenuBarStatus) -> NSImage {
+        let defaults = UserDefaults.standard
+        let showsDate = defaults.bool(forKey: MenuBarDate.showsKey)
+        let calendar = defaults.string(forKey: MenuBarDate.calendarKey).flatMap(MenuBarDate.init) ?? .gregorian
+        let size = defaults.string(forKey: MenuBarSize.key).flatMap(MenuBarSize.init) ?? .compact
 
-    @AppStorage(MenuBarDate.showsKey) private var showsDate = false
-    @AppStorage(MenuBarDate.calendarKey) private var calendar = MenuBarDate.gregorian
-    @AppStorage(MenuBarSize.key) private var size = MenuBarSize.compact
-
-    var body: some View {
         if let next = status.next,
-           let image = Self.image(
+           let image = image(
                name: next.prayer.name,
                time: status.detail,
                style: status.style,
                date: showsDate ? calendar.lines(for: status.today) : nil,
                size: size
            ) {
-            Image(nsImage: image)
-        } else {
-            Image(systemName: "moon.stars")
+            return image
         }
+        let fallback = NSImage(systemSymbolName: "moon.stars", accessibilityDescription: "Miqat") ?? NSImage()
+        fallback.isTemplate = true
+        return fallback
     }
 
     private static func image(name: String, time: String, style: MenuBarStatus.Style, date: (weekday: String, day: String)?, size: MenuBarSize) -> NSImage? {
