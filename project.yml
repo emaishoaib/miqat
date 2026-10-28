@@ -38,6 +38,7 @@ targets:
     dependencies:
       - package: PrayerKit
       - target: Miqat-Widget
+      - target: Miqat-watchOS
     entitlements:
       path: iOS/Miqat.entitlements
       properties:
