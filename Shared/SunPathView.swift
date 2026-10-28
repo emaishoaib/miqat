@@ -177,8 +177,15 @@ private struct Header: View {
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-                    .font(.title3.bold())
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(date.formatted(Self.shortDate))
+                        .font(.title3.bold())
+                    if let relativeDay = Self.relativeDay(of: date) {
+                        Text(relativeDay)
+                            .font(.subheadline)
+                            .foregroundStyle(Palette.ink.opacity(0.5))
+                    }
+                }
                 Button {
                     explanation.topic = .hijriDate
                     explanation.isShown = true
@@ -233,6 +240,20 @@ private struct Header: View {
             }
             .font(.title3)
         }
+    }
+
+    private static var shortDate: Date.VerbatimFormatStyle {
+        Date.VerbatimFormatStyle(format: "\(weekday: .abbreviated), \(day: .defaultDigits) \(month: .abbreviated)", locale: .current, timeZone: .current, calendar: .current)
+    }
+
+    private static func relativeDay(of date: Date) -> String? {
+        if Calendar.current.isDateInToday(date) {
+            return "Today"
+        }
+        if Calendar.current.isDateInTomorrow(date) {
+            return "Tomorrow"
+        }
+        return nil
     }
 }
 
