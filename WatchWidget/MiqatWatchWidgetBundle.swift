@@ -16,6 +16,6 @@ struct NextPrayerComplication: Widget {
         }
         .configurationDisplayName("Next Prayer")
         .description("The next prayer and the Hijri date.")
-        .supportedFamilies([.accessoryRectangular, .accessoryCircular, .accessoryCorner, .accessoryInline])
+        .supportedFamilies([.accessoryRectangular, .accessoryCorner, .accessoryInline])
     }
 }

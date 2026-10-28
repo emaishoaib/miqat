@@ -12,19 +12,6 @@ struct NextPrayerComplicationView: View {
             switch family {
             case .accessoryRectangular:
                 NextPrayerRectangularView(next: next, date: entry.date, isSymmetric: true)
-            case .accessoryCircular:
-                VStack(spacing: 0) {
-                    Text(next.prayer.name)
-                        .font(.system(size: 11, weight: .semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                    Text(Self.shortTime(next.begins))
-                        .font(.system(size: 15, weight: .bold))
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                }
-                .padding(4)
             case .accessoryCorner:
                 Text(Self.shortTime(next.begins))
                     .monospacedDigit()
