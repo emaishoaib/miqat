@@ -23,20 +23,12 @@ struct SunPathView: View {
         let next = response.nextPrayer(after: now)
         let today = response.day(containing: now)
         let listed = next.flatMap { response.day(containing: $0.begins) } ?? today
-        let listedIndex = listed.flatMap { response.days.firstIndex(of: $0) }
-        let shownIndex = listedIndex.map { min(max($0 + dayOffset, 0), response.days.count - 1) }
+        let shownIndex = listed.flatMap { response.days.firstIndex(of: $0) }.map { min(max($0 + dayOffset, 0), response.days.count - 1) }
         let shown = shownIndex.map { response.days[$0] }
-        let todayOffset = today.flatMap { response.days.firstIndex(of: $0) }.flatMap { todayIndex in listedIndex.map { todayIndex - $0 } }
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, hijriDate: shown?.hijriDate(at: now) ?? now, source: response.source, isRefreshing: isRefreshing, goToToday: todayOffset.map { offset in
-                    {
-                        withAnimation {
-                            dayOffset = offset
-                        }
-                    }
-                }) {
+                Header(date: shown?.date ?? now, hijriDate: shown?.hijriDate(at: now) ?? now, source: response.source, isRefreshing: isRefreshing) {
                     await refreshShowingProgress()
                 }
                 if let path, let next, let today {
@@ -178,7 +170,6 @@ private struct Header: View {
     let hijriDate: Date
     let source: TimesSource
     let isRefreshing: Bool
-    let goToToday: (() -> Void)?
     let refresh: () async -> Void
 
     @State private var explanation = TimesExplanation.shared
@@ -195,16 +186,6 @@ private struct Header: View {
                             .font(.subheadline)
                             .foregroundStyle(Palette.ink.opacity(0.5))
                             .fixedSize()
-                    } else if let goToToday {
-                        Button(action: goToToday) {
-                            Text("Go to Today")
-                                .font(.subheadline)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(Capsule().fill(Palette.ink.opacity(0.12)))
-                        }
-                        .buttonStyle(.plain)
-                        .fixedSize()
                     }
                 }
                 Button {
