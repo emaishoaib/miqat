@@ -28,6 +28,7 @@ struct SunPathDial: View {
     @AnimatableIgnored var ripple: Double
     @AnimatableIgnored var rippleAt: Date?
     @AnimatableIgnored var isCompact = false
+    @AnimatableIgnored var showsText = true
 
     var body: some View {
         Canvas { context, size in
@@ -88,11 +89,12 @@ struct SunPathDial: View {
                 with: .color((isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device)).opacity(sunGrowth))
             )
 
+            guard showsText else { return }
+
             let x = Self.center.x * scale
             let horizonY = Self.center.y * scale
             let name = context.resolve(Text(next.prayer.name).font(isCompact ? .system(size: 32 * scale, weight: .semibold) : .title.weight(.semibold)).foregroundStyle(Palette.ink))
-            let isSoon = PrayerUrgency(timeUntilNext: next.begins.timeIntervalSince(now)) != .normal
-            let countdownColor = isSoon ? (usesDayColours ? Palette.dayRed : Palette.nightRed) : Palette.gold
+            let countdownColor = Self.countdownColor(to: next.begins, from: now, usesDayColours: usesDayColours)
             let countdown = context.resolve(Text(Self.countdown(to: next.begins, from: now)).font(isCompact ? .system(size: 28 * scale, weight: .semibold) : .headline).foregroundStyle(countdownColor))
             let gap = isCompact ? Self.compactTextGap * scale : Self.textGap
             context.draw(name, at: CGPoint(x: x, y: horizonY - gap), anchor: .bottom)
@@ -135,8 +137,13 @@ struct SunPathDial: View {
         CGRect(x: (center.x - radius) * scale, y: (center.y - radius) * scale, width: 2 * radius * scale, height: 2 * radius * scale)
     }
 
-    private static func countdown(to date: Date, from now: Date) -> String {
+    static func countdown(to date: Date, from now: Date) -> String {
         let minutes = Int((date.timeIntervalSince(now) / 60).rounded(.up))
         return minutes >= 60 ? "in \(minutes / 60)h \(minutes % 60)m" : "in \(minutes)m"
+    }
+
+    static func countdownColor(to date: Date, from now: Date, usesDayColours: Bool) -> Color {
+        guard PrayerUrgency(timeUntilNext: date.timeIntervalSince(now)) != .normal else { return Palette.gold }
+        return usesDayColours ? Palette.dayRed : Palette.nightRed
     }
 }

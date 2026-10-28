@@ -144,7 +144,10 @@ targets:
   Miqat-WatchWidget:
     type: app-extension
     platform: watchOS
-    sources: [WatchWidget, WidgetShared]
+    sources:
+      - WatchWidget
+      - WidgetShared
+      - Shared/SunPathDial.swift
     dependencies:
       - package: PrayerKit
     entitlements:

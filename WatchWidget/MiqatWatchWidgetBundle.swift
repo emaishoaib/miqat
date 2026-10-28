@@ -10,9 +10,11 @@ struct MiqatWatchWidgetBundle: WidgetBundle {
 
 struct NextPrayerComplication: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "NextPrayerComplication", provider: PrayerTimelineProvider()) { entry in
+        StaticConfiguration(kind: "NextPrayerComplication", provider: PrayerTimelineProvider(updatesEveryMinute: true)) { entry in
             NextPrayerComplicationView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(for: .widget) {
+                    Color.clear
+                }
         }
         .configurationDisplayName("Next Prayer")
         .description("The next prayer and the Hijri date.")

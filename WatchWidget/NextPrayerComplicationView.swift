@@ -8,10 +8,10 @@ struct NextPrayerComplicationView: View {
     let entry: PrayerEntry
 
     var body: some View {
-        if let next = entry.response?.nextPrayer(after: entry.date) {
+        if let response = entry.response, let next = response.nextPrayer(after: entry.date) {
             switch family {
             case .accessoryRectangular:
-                NextPrayerRectangularView(next: next, date: entry.date, isSymmetric: true)
+                NextPrayerRectangularView(response: response, next: next, date: entry.date)
             case .accessoryCorner:
                 Text(Self.shortTime(next.begins))
                     .monospacedDigit()
@@ -24,7 +24,7 @@ struct NextPrayerComplicationView: View {
         }
     }
 
-    private static func shortTime(_ date: Date) -> String {
+    static func shortTime(_ date: Date) -> String {
         date.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute())
     }
 }
