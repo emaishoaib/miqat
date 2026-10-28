@@ -23,12 +23,20 @@ struct SunPathView: View {
         let next = response.nextPrayer(after: now)
         let today = response.day(containing: now)
         let listed = next.flatMap { response.day(containing: $0.begins) } ?? today
-        let shownIndex = listed.flatMap { response.days.firstIndex(of: $0) }.map { min(max($0 + dayOffset, 0), response.days.count - 1) }
+        let listedIndex = listed.flatMap { response.days.firstIndex(of: $0) }
+        let shownIndex = listedIndex.map { min(max($0 + dayOffset, 0), response.days.count - 1) }
         let shown = shownIndex.map { response.days[$0] }
+        let todayOffset = today.flatMap { response.days.firstIndex(of: $0) }.flatMap { todayIndex in listedIndex.map { todayIndex - $0 } }
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, hijriDate: shown?.hijriDate(at: now) ?? now, source: response.source, isRefreshing: isRefreshing) {
+                Header(date: shown?.date ?? now, hijriDate: shown?.hijriDate(at: now) ?? now, source: response.source, isRefreshing: isRefreshing, goToToday: todayOffset.map { offset in
+                    {
+                        withAnimation {
+                            dayOffset = offset
+                        }
+                    }
+                }) {
                     await refreshShowingProgress()
                 }
                 if let path, let next, let today {
@@ -170,6 +178,7 @@ private struct Header: View {
     let hijriDate: Date
     let source: TimesSource
     let isRefreshing: Bool
+    let goToToday: (() -> Void)?
     let refresh: () async -> Void
 
     @State private var explanation = TimesExplanation.shared
@@ -180,10 +189,22 @@ private struct Header: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(date.formatted(Self.shortDate))
                         .font(.title3.bold())
-                    if let relativeDay = Self.relativeDay(of: date) {
-                        Text(relativeDay)
+                        .fixedSize()
+                    if Calendar.current.isDateInToday(date) {
+                        Text("Today")
                             .font(.subheadline)
                             .foregroundStyle(Palette.ink.opacity(0.5))
+                            .fixedSize()
+                    } else if let goToToday {
+                        Button(action: goToToday) {
+                            Text("Go to Today")
+                                .font(.subheadline)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(Palette.ink.opacity(0.12)))
+                        }
+                        .buttonStyle(.plain)
+                        .fixedSize()
                     }
                 }
                 Button {
@@ -216,6 +237,7 @@ private struct Header: View {
                     TimesExplanationView(source: source, topic: explanation.topic, hijriDateHasMovedOn: hijriDate != date)
                 }
             }
+            .layoutPriority(1)
             Spacer()
             HStack(spacing: 22) {
                 Button {
@@ -244,16 +266,6 @@ private struct Header: View {
 
     private static var shortDate: Date.VerbatimFormatStyle {
         Date.VerbatimFormatStyle(format: "\(weekday: .abbreviated), \(day: .defaultDigits) \(month: .abbreviated)", locale: .current, timeZone: .current, calendar: .current)
-    }
-
-    private static func relativeDay(of date: Date) -> String? {
-        if Calendar.current.isDateInToday(date) {
-            return "Today"
-        }
-        if Calendar.current.isDateInTomorrow(date) {
-            return "Tomorrow"
-        }
-        return nil
     }
 }
 
