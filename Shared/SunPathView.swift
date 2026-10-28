@@ -196,6 +196,7 @@ private struct Header: View {
                         Text(HijriDate.formatted(hijriDate))
                             .foregroundStyle(Palette.ink.opacity(0.7))
                         Image(systemName: "info.circle")
+                            .font(.subheadline)
                             .foregroundStyle(Palette.ink.opacity(0.5))
                     }
                 }
