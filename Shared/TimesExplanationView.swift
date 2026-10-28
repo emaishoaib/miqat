@@ -1,6 +1,14 @@
 import PrayerKit
 import SwiftUI
 
+@MainActor
+@Observable
+final class TimesExplanation {
+    static let shared = TimesExplanation()
+
+    var isShown = false
+}
+
 struct TimesExplanationView: View {
     let source: TimesSource
 

@@ -233,7 +233,7 @@ private struct Header: View {
     let source: TimesSource
     let refresh: () async -> Void
 
-    @State private var explainsTimes = false
+    @State private var explanation = TimesExplanation.shared
 
     var body: some View {
         HStack(alignment: .top) {
@@ -243,7 +243,7 @@ private struct Header: View {
                 Text(HijriDate.formatted(date))
                     .foregroundStyle(Palette.ink.opacity(0.7))
                 Button {
-                    explainsTimes = true
+                    explanation.isShown = true
                 } label: {
                     HStack(spacing: 6) {
                         SourceLabel(source: source)
@@ -254,7 +254,7 @@ private struct Header: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 6)
-                .sheet(isPresented: $explainsTimes) {
+                .sheet(isPresented: $explanation.isShown) {
                     TimesExplanationView(source: source)
                 }
             }

@@ -15,6 +15,7 @@ final class StatusItemController: NSObject {
     private let content: NSHostingController<PopUpContent>
     private let panel = PopUpPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
     private var clickMonitor: Any?
+    private var sheetClickMonitor: Any?
     private var hiddenAt = Date.distantPast
 
     override init() {
@@ -43,8 +44,21 @@ final class StatusItemController: NSObject {
         updateImage()
         observeStatus()
         observeSettingsPage()
+        closeSheetOnOutsideClicks()
         NotificationCenter.default.addObserver(self, selector: #selector(defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
         Task { await model.load() }
+    }
+
+    private func closeSheetOnOutsideClicks() {
+        sheetClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+            let window = event.window
+            let handled = MainActor.assumeIsolated {
+                guard let self, window != nil, window == self.panel, TimesExplanation.shared.isShown else { return false }
+                TimesExplanation.shared.isShown = false
+                return true
+            }
+            return handled ? nil : event
+        }
     }
 
     @objc private func defaultsChanged() {
@@ -116,6 +130,7 @@ final class StatusItemController: NSObject {
     private func show() {
         guard let button = statusItem.button else { return }
         SettingsPage.shared.isShown = false
+        TimesExplanation.shared.isShown = false
         status.acknowledge()
 
         panel.setFrame(frame(), display: true)
