@@ -6,6 +6,7 @@ struct MiqatMacApp: App {
     @State private var model: TimetableModel
     @State private var status: MenuBarStatus
     @State private var settings = SettingsPage.shared
+    @AppStorage(MenuBarDate.showsKey) private var showsDate = false
 
     init() {
         let model = TimetableModel()
@@ -22,7 +23,7 @@ struct MiqatMacApp: App {
                     SettingsView()
                 }
             }
-            .frame(width: 360, height: 680)
+            .frame(width: showsDate ? 360 + CalendarView.width : 360, height: 680)
             .onAppear {
                 status.acknowledge()
                 settings.isShown = false

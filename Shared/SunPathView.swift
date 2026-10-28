@@ -28,6 +28,9 @@ struct SunPathView: View {
     @State private var pulseEnd: Date?
     @State private var systemIsDark = Self.systemIsDark()
     @AppStorage(Appearance.key) private var appearance = Appearance.sun
+    #if os(macOS)
+    @AppStorage(MenuBarDate.showsKey) private var showsDate = false
+    #endif
 
     var body: some View {
         let path = response.sunPath(on: now)
@@ -37,63 +40,73 @@ struct SunPathView: View {
         let shownIndex = listed.flatMap { response.days.firstIndex(of: $0) }.map { min(max($0 + dayOffset, 0), response.days.count - 1) }
         let shown = shownIndex.map { response.days[$0] }
 
-        ScrollView {
-            VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, source: response.source) {
-                    await refreshWithPulse()
-                }
-                if let path, let next, let today {
-                    TimelineView(.animation(paused: pulseStart == nil)) { timeline in
-                        KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
-                            SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: usesDayColours(on: path), launch: launch, pulse: pulse(at: timeline.date), ripple: ripple, rippleAt: rippleAt)
-                        } keyframes: { _ in
-                            MoveKeyframe(0)
-                            LinearKeyframe(1, duration: 0.9)
+        HStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 28) {
+                    Header(date: shown?.date ?? now, source: response.source) {
+                        await refreshWithPulse()
+                    }
+                    if let path, let next, let today {
+                        TimelineView(.animation(paused: pulseStart == nil)) { timeline in
+                            KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
+                                SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: usesDayColours(on: path), launch: launch, pulse: pulse(at: timeline.date), ripple: ripple, rippleAt: rippleAt)
+                            } keyframes: { _ in
+                                MoveKeyframe(0)
+                                LinearKeyframe(1, duration: 0.9)
+                            }
+                        }
+                        .onAppear {
+                            guard !Self.hasGrownIn else { return }
+                            Self.hasGrownIn = true
+                            withAnimation(.linear(duration: 1.4)) {
+                                launch = 1
+                            }
                         }
                     }
-                    .onAppear {
-                        guard !Self.hasGrownIn else { return }
-                        Self.hasGrownIn = true
-                        withAnimation(.linear(duration: 1.4)) {
-                            launch = 1
+                    if let shown, let shownIndex {
+                        let gap = contentWidth * SunPathDial.horizonInset / SunPathDial.canvas.width + Self.margin
+                        HStack(spacing: 0) {
+                            DayChevron(systemName: "chevron.left", label: "Previous day", isShown: shownIndex > 0, width: gap) {
+                                browse(by: -1, from: shownIndex)
+                            }
+                            PrayerList(day: shown, next: next, now: now)
+                            DayChevron(systemName: "chevron.right", label: "Next day", isShown: shownIndex < response.days.count - 1, width: gap) {
+                                browse(by: 1, from: shownIndex)
+                            }
                         }
+                        .padding(.horizontal, -Self.margin)
+                        #if os(iOS)
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 30).onEnded { drag in
+                                guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
+                                browse(by: drag.translation.width < 0 ? 1 : -1, from: shownIndex)
+                            }
+                        )
+                        #endif
                     }
                 }
-                if let shown, let shownIndex {
-                    let gap = contentWidth * SunPathDial.horizonInset / SunPathDial.canvas.width + Self.margin
-                    HStack(spacing: 0) {
-                        DayChevron(systemName: "chevron.left", label: "Previous day", isShown: shownIndex > 0, width: gap) {
-                            browse(by: -1, from: shownIndex)
-                        }
-                        PrayerList(day: shown, next: next, now: now)
-                        DayChevron(systemName: "chevron.right", label: "Next day", isShown: shownIndex < response.days.count - 1, width: gap) {
-                            browse(by: 1, from: shownIndex)
-                        }
-                    }
-                    .padding(.horizontal, -Self.margin)
-                    #if os(iOS)
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 30).onEnded { drag in
-                            guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
-                            browse(by: drag.translation.width < 0 ? 1 : -1, from: shownIndex)
-                        }
-                    )
-                    #endif
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.size.width
+                } action: { width in
+                    contentWidth = width
                 }
+                .padding(.horizontal, Self.margin)
+                .padding(.vertical, 12)
             }
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                proxy.size.width
-            } action: { width in
-                contentWidth = width
+            #if os(iOS)
+            .pullToRefresh {
+                await refreshWithPulse()
             }
-            .padding(.horizontal, Self.margin)
-            .padding(.vertical, 12)
+            #endif
+            #if os(macOS)
+            if showsDate {
+                Rectangle()
+                    .fill(Palette.ink.opacity(0.15))
+                    .frame(width: 0.5)
+                CalendarView()
+            }
+            #endif
         }
-        #if os(iOS)
-        .pullToRefresh {
-            await refreshWithPulse()
-        }
-        #endif
         .onChange(of: next?.begins) { began, _ in
             if let began, began <= now {
                 rippleAt = began
