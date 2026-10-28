@@ -206,7 +206,7 @@ private struct Header: View {
                 .buttonStyle(.plain)
                 .padding(.top, 6)
                 .sheet(isPresented: $explanation.isShown) {
-                    TimesExplanationView(source: source, topic: explanation.topic)
+                    TimesExplanationView(source: source, topic: explanation.topic, hijriDateHasMovedOn: hijriDate != date)
                 }
             }
             Spacer()

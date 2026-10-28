@@ -18,6 +18,7 @@ final class TimesExplanation {
 struct TimesExplanationView: View {
     let source: TimesSource
     let topic: TimesExplanation.Topic
+    let hijriDateHasMovedOn: Bool
 
     var body: some View {
         ScrollView {
@@ -43,6 +44,12 @@ struct TimesExplanationView: View {
     private var hijriDate: some View {
         Text("About the Hijri date")
             .font(.title2.bold())
+        if hijriDateHasMovedOn {
+            Paragraph(
+                title: "Maghrib has passed",
+                text: "So the Hijri date shown is already the next one, while the Gregorian date is still today's."
+            )
+        }
         Paragraph(
             title: "The day starts at Maghrib",
             text: "In the Islamic calendar a day runs from sunset to sunset. So from Maghrib, Miqat shows the next Hijri date, even though the Gregorian date hasn't changed yet."
