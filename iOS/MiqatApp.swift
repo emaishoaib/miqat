@@ -5,6 +5,10 @@ struct MiqatApp: App {
     @State private var model = TimetableModel()
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        WatchSync.shared.activate()
+    }
+
     var body: some Scene {
         WindowGroup {
             TimetableScreen(model: model)

@@ -71,6 +71,9 @@ final class TimetableModel {
         }
         cache.save(response)
         WidgetCenter.shared.reloadAllTimelines()
+        #if os(iOS)
+        WatchSync.shared.send(response)
+        #endif
         state = .loaded(response)
     }
 
