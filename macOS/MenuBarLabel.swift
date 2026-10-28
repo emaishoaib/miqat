@@ -4,20 +4,15 @@ import SwiftUI
 
 @MainActor
 enum MenuBarLabel {
-    static func image(for status: MenuBarStatus, appearance: NSAppearance?) -> NSImage {
-        let defaults = UserDefaults.standard
-        let showsDate = defaults.bool(forKey: MenuBarDate.showsKey)
-        let calendar = defaults.string(forKey: MenuBarDate.calendarKey).flatMap(MenuBarDate.init) ?? .gregorian
-        let size = defaults.string(forKey: MenuBarSize.key).flatMap(MenuBarSize.init) ?? .compact
+    static func image(for status: MenuBarStatus) -> NSImage {
+        let size = UserDefaults.standard.string(forKey: MenuBarSize.key).flatMap(MenuBarSize.init) ?? .compact
 
         if let next = status.next,
            let image = image(
                name: next.prayer.name,
                time: status.detail,
                style: status.style,
-               date: showsDate ? calendar.lines(for: status.today) : nil,
-               size: size,
-               appearance: appearance
+               size: size
            ) {
             return image
         }
@@ -26,29 +21,17 @@ enum MenuBarLabel {
         return fallback
     }
 
-    private static func image(name: String, time: String, style: MenuBarStatus.Style, date: (weekday: String, day: String)?, size: MenuBarSize, appearance: NSAppearance?) -> NSImage? {
-        let prayerColor: Color = switch style {
+    private static func image(name: String, time: String, style: MenuBarStatus.Style, size: MenuBarSize) -> NSImage? {
+        let color: Color = switch style {
         case .normal: .black
         case .alert: Color(nsColor: .systemRed)
         case .alertDimmed: Color(nsColor: .systemRed).opacity(0.25)
         }
-        let dateColor: Color = style == .normal ? .black : textColor(on: appearance)
 
         let renderer = ImageRenderer(
-            content: HStack(spacing: size == .compact ? 8 : 6) {
-                part(top: name, bottom: time, size: size)
-                    .foregroundStyle(prayerColor)
-                if let date {
-                    if size == .large {
-                        Text(verbatim: "·")
-                            .font(.system(size: 13))
-                            .foregroundStyle(dateColor)
-                    }
-                    part(top: date.weekday, bottom: date.day, size: size)
-                        .foregroundStyle(dateColor)
-                }
-            }
-            .fixedSize()
+            content: part(top: name, bottom: time, size: size)
+                .foregroundStyle(color)
+                .fixedSize()
         )
         renderer.scale = 2
         guard let image = renderer.nsImage else { return nil }
@@ -76,10 +59,5 @@ enum MenuBarLabel {
                     .monospacedDigit()
             }
         }
-    }
-
-    private static func textColor(on appearance: NSAppearance?) -> Color {
-        let isDark = (appearance ?? NSApplication.shared.effectiveAppearance).bestMatch(from: [.aqua, .darkAqua, .vibrantLight, .vibrantDark]).map { [.darkAqua, .vibrantDark].contains($0) } ?? false
-        return isDark ? .white : .black
     }
 }

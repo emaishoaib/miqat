@@ -42,7 +42,6 @@ struct SettingsView: View {
                 Section("Menu bar") {
                     MenuBarSizePicker()
                     PopUpAlignmentPicker()
-                    MenuBarDatePicker()
                 }
                 Section {
                     VersionRow()
@@ -57,23 +56,6 @@ struct SettingsView: View {
         .foregroundStyle(Color.primary)
         .tint(nil)
         .environment(\.colorScheme, .dark)
-    }
-}
-
-private struct MenuBarDatePicker: View {
-    @AppStorage(MenuBarDate.showsKey) private var showsDate = false
-    @AppStorage(MenuBarDate.calendarKey) private var calendar = MenuBarDate.gregorian
-
-    var body: some View {
-        Toggle("Show the date", isOn: $showsDate)
-        Picker("Calendar", selection: $calendar) {
-            ForEach(MenuBarDate.allCases, id: \.self) { option in
-                Text(option.name)
-                    .tag(option)
-            }
-        }
-        .pickerStyle(.radioGroup)
-        .disabled(!showsDate)
     }
 }
 

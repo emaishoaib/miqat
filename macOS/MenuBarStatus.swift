@@ -14,7 +14,6 @@ final class MenuBarStatus {
     private(set) var next: PrayerTime?
     private(set) var detail = ""
     private(set) var style: Style = .normal
-    private(set) var today = Calendar.current.startOfDay(for: .now)
 
     private let model: TimetableModel
     private var acknowledgedPrayer: Date?
@@ -51,7 +50,6 @@ final class MenuBarStatus {
 
     private func refresh() -> Duration {
         let now = Date.now
-        today = Calendar.current.startOfDay(for: now)
         guard case .loaded(let response) = model.state, let next = response.nextPrayer(after: now) else {
             self.next = nil
             style = .normal

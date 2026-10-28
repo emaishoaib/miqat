@@ -43,7 +43,6 @@ final class StatusItemController: NSObject {
         }
         updateImage()
         observeStatus()
-        observeSettingsPage()
         closeSheetOnOutsideClicks()
         NotificationCenter.default.addObserver(self, selector: #selector(defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
         Task { await model.load() }
@@ -69,27 +68,12 @@ final class StatusItemController: NSObject {
     }
 
     private func updateImage() {
-        statusItem.button?.image = MenuBarLabel.image(for: status, appearance: statusItem.button?.effectiveAppearance)
-    }
-
-    private var width: CGFloat {
-        let showsCalendar = UserDefaults.standard.bool(forKey: MenuBarDate.showsKey) && !SettingsPage.shared.isShown
-        return SunPathView.timetableWidth + (showsCalendar ? CalendarView.width : 0)
-    }
-
-    private func observeSettingsPage() {
-        withObservationTracking {
-            _ = SettingsPage.shared.isShown
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
-                self?.resize()
-                self?.observeSettingsPage()
-            }
-        }
+        statusItem.button?.image = MenuBarLabel.image(for: status)
     }
 
     private func frame() -> NSRect {
         let icon = iconFrame
+        let width = PopUpContent.width
         let alignment = UserDefaults.standard.string(forKey: PopUpAlignment.key).flatMap(PopUpAlignment.init) ?? .center
         var x = alignment.x(width: width, under: icon)
         if let screen = statusItem.button?.window?.screen?.visibleFrame {
@@ -110,7 +94,7 @@ final class StatusItemController: NSObject {
 
     private func observeStatus() {
         withObservationTracking {
-            _ = (status.next, status.detail, status.style, status.today)
+            _ = (status.next, status.detail, status.style)
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 self?.updateImage()

@@ -5,22 +5,13 @@ struct TimetableScreen: View {
     let model: TimetableModel
 
     @Environment(\.openURL) private var openURL
-    #if os(macOS)
-    @State private var quitBarHeight: CGFloat = 0
-    #endif
 
     var body: some View {
         content
             #if os(macOS)
             .safeAreaInset(edge: .bottom) {
                 QuitBar()
-                    .onGeometryChange(for: CGFloat.self) { proxy in
-                        proxy.size.height
-                    } action: { height in
-                        quitBarHeight = height
-                    }
             }
-            .environment(\.quitBarHeight, quitBarHeight)
             #endif
     }
 
