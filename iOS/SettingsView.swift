@@ -61,7 +61,7 @@ private struct SettingsView: View {
                     AppearancePicker()
                 }
                 Section {
-                    LabeledContent("Version", value: "\(Self.info("CFBundleShortVersionString")) (\(Self.info("CFBundleVersion")))")
+                    VersionRow()
                 }
             }
             .navigationTitle("Settings")
@@ -77,10 +77,6 @@ private struct SettingsView: View {
                 }
             }
         }
-    }
-
-    private static func info(_ key: String) -> String {
-        Bundle.main.object(forInfoDictionaryKey: key) as? String ?? ""
     }
 }
 
@@ -149,18 +145,5 @@ private struct SoundPicker: View {
             .flatMap { Bundle.main.url(forResource: $0, withExtension: nil) }
             .flatMap { try? AVAudioPlayer(contentsOf: $0) }
         player?.play()
-    }
-}
-
-private struct AppearancePicker: View {
-    @AppStorage(Appearance.key) private var appearance = Appearance.sun
-
-    var body: some View {
-        Picker("Appearance", selection: $appearance) {
-            ForEach(Appearance.allCases, id: \.self) { option in
-                Text(option.name)
-                    .tag(option)
-            }
-        }
     }
 }

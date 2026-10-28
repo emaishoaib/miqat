@@ -250,9 +250,7 @@ private struct Header: View {
                 }
                 .buttonStyle(.borderless)
                 .accessibilityLabel("Refresh prayer times")
-                #if os(iOS)
                 SettingsButton()
-                #endif
             }
             .font(.title3)
         }
