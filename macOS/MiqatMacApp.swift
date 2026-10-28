@@ -5,6 +5,7 @@ import SwiftUI
 struct MiqatMacApp: App {
     @State private var model: TimetableModel
     @State private var status: MenuBarStatus
+    @State private var settings = SettingsPage.shared
 
     init() {
         let model = TimetableModel()
@@ -15,9 +16,17 @@ struct MiqatMacApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            TimetableScreen(model: model)
-                .frame(width: 360, height: 680)
-            .onAppear { status.acknowledge() }
+            ZStack {
+                TimetableScreen(model: model)
+                if settings.isShown {
+                    SettingsView()
+                }
+            }
+            .frame(width: 360, height: 680)
+            .onAppear {
+                status.acknowledge()
+                settings.isShown = false
+            }
         } label: {
             MenuBarLabel(status: status)
         }

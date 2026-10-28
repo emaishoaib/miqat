@@ -10,6 +10,9 @@ struct AppearancePicker: View {
                     .tag(option)
             }
         }
+        #if os(macOS)
+        .pickerStyle(.radioGroup)
+        #endif
     }
 }
 
