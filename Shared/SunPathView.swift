@@ -12,6 +12,9 @@ enum Palette {
 
 struct SunPathView: View {
     private static let margin: CGFloat = 20
+    #if os(macOS)
+    static let timetableWidth: CGFloat = 360
+    #endif
     private static let pulseCycle: TimeInterval = 1.0
 
     let response: PrayerTimesResponse
@@ -97,6 +100,9 @@ struct SunPathView: View {
             .pullToRefresh {
                 await refreshWithPulse()
             }
+            #endif
+            #if os(macOS)
+            .frame(width: Self.timetableWidth)
             #endif
             #if os(macOS)
             if showsDate {

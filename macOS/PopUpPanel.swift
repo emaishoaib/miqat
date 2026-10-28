@@ -14,19 +14,24 @@ final class PopUpPanel: NSPanel {
 }
 
 struct PopUpContent: View {
+    static let height: CGFloat = 680
+
     let model: TimetableModel
 
     @State private var settings = SettingsPage.shared
     @AppStorage(MenuBarDate.showsKey) private var showsDate = false
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topLeading) {
             TimetableScreen(model: model)
+                .frame(width: SunPathView.timetableWidth + (showsDate ? CalendarView.width : 0))
             if settings.isShown {
                 SettingsView()
+                    .frame(width: SunPathView.timetableWidth)
             }
         }
-        .frame(width: showsDate ? 360 + CalendarView.width : 360, height: 680)
+        .frame(height: Self.height)
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

@@ -6,6 +6,7 @@ import SwiftUI
 final class StatusItemController: NSObject {
     private static let gap: CGFloat = 6
     private static let screenMargin: CGFloat = 8
+    private static let resizeDuration: TimeInterval = 0.3
 
     private let model = TimetableModel()
     private let status: MenuBarStatus
@@ -17,7 +18,7 @@ final class StatusItemController: NSObject {
     override init() {
         status = MenuBarStatus(model: model)
         content = NSHostingController(rootView: PopUpContent(model: model))
-        content.sizingOptions = [.preferredContentSize]
+        content.sizingOptions = []
         super.init()
 
         panel.contentViewController = content
@@ -39,12 +40,48 @@ final class StatusItemController: NSObject {
         }
         updateImage()
         observeStatus()
-        NotificationCenter.default.addObserver(self, selector: #selector(updateImage), name: UserDefaults.didChangeNotification, object: nil)
+        observeSettingsPage()
+        NotificationCenter.default.addObserver(self, selector: #selector(defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
         Task { await model.load() }
     }
 
-    @objc private func updateImage() {
+    @objc private func defaultsChanged() {
+        updateImage()
+        resize()
+    }
+
+    private func updateImage() {
         statusItem.button?.image = MenuBarLabel.image(for: status)
+    }
+
+    private var width: CGFloat {
+        let showsCalendar = UserDefaults.standard.bool(forKey: MenuBarDate.showsKey) && !SettingsPage.shared.isShown
+        return SunPathView.timetableWidth + (showsCalendar ? CalendarView.width : 0)
+    }
+
+    private func observeSettingsPage() {
+        withObservationTracking {
+            _ = SettingsPage.shared.isShown
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.resize()
+                self?.observeSettingsPage()
+            }
+        }
+    }
+
+    private func resize() {
+        guard panel.isVisible, panel.frame.width != width else { return }
+        var frame = panel.frame
+        frame.size.width = width
+        if let screen = panel.screen?.visibleFrame {
+            frame.origin.x = min(frame.origin.x, screen.maxX - width - Self.screenMargin)
+        }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = Self.resizeDuration
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(frame, display: true)
+        }
     }
 
     private func observeStatus() {
@@ -67,7 +104,7 @@ final class StatusItemController: NSObject {
         SettingsPage.shared.isShown = false
         status.acknowledge()
 
-        let size = content.view.fittingSize
+        let size = NSSize(width: width, height: PopUpContent.height)
         let icon = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
         var x = icon.midX - size.width / 2
         if let screen = buttonWindow.screen?.visibleFrame {
