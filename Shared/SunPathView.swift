@@ -252,7 +252,7 @@ private struct Header: View {
 }
 
 private struct PrayerList: View {
-    static let columnWidth: CGFloat = 76
+    static let columnWidth: CGFloat = 84
 
     let day: PrayerDay
     let next: PrayerTime?
