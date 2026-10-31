@@ -162,14 +162,18 @@ def city_timetable_response(city: City, times: list[CityPrayerTime]) -> Timetabl
                 jamaat=None,
             )
         )
+    city_out = CityOut(
+        id=city.place_id,
+        name=city.name,
+        method=METHOD_NAMES[Method(city.method)],
+        asr_school=SCHOOL_NAMES[School(city.school)],
+    )
     return TimetableOut(
         version=city_timetable_version(city),
-        city=CityOut(
-            id=city.place_id,
-            name=city.name,
-            method=METHOD_NAMES[Method(city.method)],
-            asr_school=SCHOOL_NAMES[School(city.school)],
-        ),
+        city=city_out,
         time_zone=city.time_zone,
-        days=[DayOut(date=day, times=day_times) for day, day_times in days.items()],
+        days=[
+            DayOut(date=day, city=city_out, times=day_times)
+            for day, day_times in days.items()
+        ],
     )

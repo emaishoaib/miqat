@@ -30,6 +30,8 @@ class PrayerTimeOut(BaseModel):
 
 class DayOut(BaseModel):
     date: datetime.date
+    mosque: MosqueOut | None = None
+    city: CityOut | None = None
     times: list[PrayerTimeOut]
 
 

@@ -36,6 +36,8 @@ DAY: dict = {
     Prayer.MAGHRIB: (datetime.time(21, 20), datetime.time(21, 25)),
     Prayer.ISHA: (datetime.time(22, 50), datetime.time(23, 0)),
 }
+LATER_ISHA_DAY: dict = {**DAY, Prayer.ISHA: (datetime.time(23, 30), None)}
+AFTER_ISHA = datetime.datetime(2027, 6, 1, 22, 0, tzinfo=datetime.UTC)
 
 
 class FakePlaces:
@@ -174,13 +176,99 @@ def test_skips_a_mosque_once_its_last_prayer_has_passed(session, client):
     add_mosque(
         session, "current", {TODAY: DAY, TODAY + datetime.timedelta(days=1): DAY}
     )
-    after_isha = datetime.datetime(2027, 6, 1, 22, 0, tzinfo=datetime.UTC)
 
-    response = client(["ending", "current"], now=after_isha).get(
+    response = client(["ending", "current"], now=AFTER_ISHA).get(
         "/prayer-times", params=SOLIHULL
     )
 
     assert response.json()["mosque"]["id"] == "current"
+
+
+def test_keeps_today_from_a_finished_mosque_before_the_next_mosque(session, client):
+    add_mosque(session, "ending", {TODAY: DAY})
+    add_mosque(
+        session, "current", {TODAY: DAY, TODAY + datetime.timedelta(days=1): DAY}
+    )
+
+    body = (
+        client(["ending", "current"], now=AFTER_ISHA)
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["version"] == "ending:1+current:1"
+    assert [(day["date"], day["mosque"]["id"]) for day in body["days"]] == [
+        ("2027-06-01", "ending"),
+        ("2027-06-02", "current"),
+    ]
+
+
+def test_keeps_today_from_a_finished_mosque_before_the_city(session, client):
+    add_mosque(session, "ending", {TODAY: DAY})
+
+    body = (
+        client(["ending"], geocoding=FakeGeocoding(SOLIHULL_CITY), now=AFTER_ISHA)
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["mosque"] is None
+    assert body["city"]["id"] == "place-solihull"
+    assert body["version"] == "ending:1+place-solihull:1"
+    today, tomorrow = body["days"][:2]
+    assert today["date"] == "2027-06-01"
+    assert today["mosque"]["id"] == "ending"
+    assert today["city"] is None
+    assert today["times"][0]["jamaat"] == "2027-06-01T03:30:00+01:00"
+    assert tomorrow["date"] == "2027-06-02"
+    assert tomorrow["mosque"] is None
+    assert tomorrow["city"]["id"] == "place-solihull"
+
+
+def test_ignores_a_finished_mosque_when_nothing_comes_after_today(session, client):
+    add_mosque(session, "ending", {TODAY: DAY})
+    add_mosque(session, "later", {TODAY: LATER_ISHA_DAY})
+
+    body = (
+        client(["ending", "later"], now=AFTER_ISHA)
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["version"] == "later:1"
+    assert [day["mosque"]["id"] for day in body["days"]] == ["later"]
+
+
+def test_replies_not_modified_for_a_timetable_with_a_finished_mosque(session, client):
+    add_mosque(session, "ending", {TODAY: DAY})
+    api = client(["ending"], geocoding=FakeGeocoding(SOLIHULL_CITY), now=AFTER_ISHA)
+    etag = api.get("/prayer-times", params=SOLIHULL).headers["ETag"]
+
+    response = api.get(
+        "/prayer-times", params=SOLIHULL, headers={"If-None-Match": etag}
+    )
+
+    assert response.status_code == 304
+
+
+def test_names_the_mosque_on_each_of_its_days(session, client):
+    add_mosque(session, "masjid", {TODAY: DAY})
+
+    body = client(["masjid"]).get("/prayer-times", params=SOLIHULL).json()
+
+    assert body["days"][0]["mosque"] == body["mosque"]
+    assert body["days"][0]["city"] is None
+
+
+def test_names_the_city_on_each_of_its_days(session, client):
+    body = (
+        client([], geocoding=FakeGeocoding(SOLIHULL_CITY))
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["days"][0]["city"] == body["city"]
+    assert body["days"][0]["mosque"] is None
 
 
 def test_returns_404_when_no_nearby_mosque_has_times_and_there_is_no_city(

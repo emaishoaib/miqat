@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Lookup:
     found: tuple[Mosque, list[PrayerTime]] | None = None
+    finished_today: tuple[Mosque, list[PrayerTime]] | None = None
     unknown: list[NearbyMosque] = field(default_factory=list)
 
 
@@ -35,10 +36,12 @@ def nearest_with_times(
         if mosque is None:
             lookup.unknown.append(candidate)
             continue
-        times = upcoming_times(session, mosque, now)
-        if times:
+        times = times_from_today(session, mosque, now)
+        if has_upcoming_prayer(mosque, times, now):
             lookup.found = (mosque, times)
             return lookup
+        if times and lookup.finished_today is None:
+            lookup.finished_today = (mosque, times)
     return lookup
 
 
@@ -67,21 +70,25 @@ def add_unknown_mosques(
         session.rollback()
 
 
-def upcoming_times(
+def times_from_today(
     session: Session, mosque: Mosque, now: datetime.datetime
 ) -> list[PrayerTime]:
-    zone = ZoneInfo(mosque.time_zone)
-    today = now.astimezone(zone).date()
+    today = now.astimezone(ZoneInfo(mosque.time_zone)).date()
     times = session.scalars(
         select(PrayerTime).where(
             PrayerTime.place_id == mosque.place_id, PrayerTime.date >= today
         )
     ).all()
-    if not any(
-        datetime.datetime.combine(time.date, time.begins, zone) > now for time in times
-    ):
-        return []
     return sorted(times, key=lambda time: (time.date, PRAYER_ORDER.index(time.prayer)))
+
+
+def has_upcoming_prayer(
+    mosque: Mosque, times: list[PrayerTime], now: datetime.datetime
+) -> bool:
+    zone = ZoneInfo(mosque.time_zone)
+    return any(
+        datetime.datetime.combine(time.date, time.begins, zone) > now for time in times
+    )
 
 
 def timetable_version(mosque: Mosque) -> str:
@@ -103,21 +110,40 @@ def timetable_response(
                 else None,
             )
         )
+    mosque_out = MosqueOut(
+        id=mosque.place_id,
+        name=mosque.name,
+        address=mosque.address,
+        website=mosque.website,
+        latitude=mosque.latitude,
+        longitude=mosque.longitude,
+        distance_meters=distance_meters(
+            latitude, longitude, mosque.latitude, mosque.longitude
+        ),
+    )
     return TimetableOut(
         version=timetable_version(mosque),
-        mosque=MosqueOut(
-            id=mosque.place_id,
-            name=mosque.name,
-            address=mosque.address,
-            website=mosque.website,
-            latitude=mosque.latitude,
-            longitude=mosque.longitude,
-            distance_meters=distance_meters(
-                latitude, longitude, mosque.latitude, mosque.longitude
-            ),
-        ),
+        mosque=mosque_out,
         time_zone=mosque.time_zone,
-        days=[DayOut(date=day, times=day_times) for day, day_times in days.items()],
+        days=[
+            DayOut(date=day, mosque=mosque_out, times=day_times)
+            for day, day_times in days.items()
+        ],
+    )
+
+
+def prepend_finished_day(
+    timetable: TimetableOut, finished: TimetableOut
+) -> TimetableOut:
+    today = finished.days[-1].date
+    later_days = [day for day in timetable.days if day.date > today]
+    if not later_days:
+        return timetable
+    return timetable.model_copy(
+        update={
+            "version": f"{finished.version}+{timetable.version}",
+            "days": finished.days + later_days,
+        }
     )
 
 
