@@ -50,6 +50,7 @@ targets:
         UIBackgroundModes: [fetch]
         BGTaskSchedulerPermittedIdentifiers: [com.mashoaib.miqat.daily-refresh]
         MiqatServerURL: $(MIQAT_SERVER_SCHEME)://$(MIQAT_SERVER_HOST)
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_NAME: Miqat
