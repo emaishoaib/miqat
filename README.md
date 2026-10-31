@@ -6,7 +6,7 @@ Prayer times from your nearest mosque on iOS, watchOS and macOS.
 
 The Xcode project is generated from `project.yml` using `xcodegen` and is not committed.
 
-Release builds read the server's domain from `Config/Release.xcconfig`, which is not committed. Copy `Config/Release.xcconfig.example` and fill it in.
+Release builds read the server's domain and the Apple development team from `Config/Release.xcconfig`, which is not committed. Copy `Config/Release.xcconfig.example` and fill it in.
 
 # Infrastructure
 
