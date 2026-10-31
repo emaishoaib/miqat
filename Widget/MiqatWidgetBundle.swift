@@ -5,5 +5,6 @@ import WidgetKit
 struct MiqatWidgetBundle: WidgetBundle {
     var body: some Widget {
         PrayerTimesWidget()
+        NextPrayerWidget()
     }
 }
