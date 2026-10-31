@@ -62,6 +62,7 @@ private struct ServerTimetable: Decodable {
         let id: String
         let name: String
         let address: String
+        let website: URL?
         let latitude: Double
         let longitude: Double
         let distanceMeters: Double
@@ -112,6 +113,7 @@ private struct ServerTimetable: Decodable {
                     id: mosque.id,
                     name: mosque.name,
                     address: mosque.address,
+                    website: mosque.website,
                     coordinate: Coordinate(latitude: mosque.latitude, longitude: mosque.longitude)
                 ),
                 distanceInMeters: mosque.distanceMeters

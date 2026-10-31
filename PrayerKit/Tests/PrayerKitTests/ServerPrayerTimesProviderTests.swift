@@ -39,6 +39,43 @@ struct ServerPrayerTimesProviderTests {
         #expect(distance == 120.5)
     }
 
+    @Test func readsTheMosqueWebsite() throws {
+        let websiteBody = Data("""
+        {
+          "version": "masjid:3",
+          "mosque": {
+            "id": "masjid",
+            "name": "Masjid Solihull",
+            "address": "1 High Street, Solihull",
+            "website": "https://example.org/",
+            "latitude": 52.4118,
+            "longitude": -1.7776,
+            "distance_meters": 120.5
+          },
+          "time_zone": "Europe/London",
+          "days": []
+        }
+        """.utf8)
+
+        let response = try #require(try ServerPrayerTimesProvider.response(from: websiteBody, statusCode: 200))
+
+        guard case let .mosque(mosque, _) = response.source else {
+            Issue.record("Expected a mosque source")
+            return
+        }
+        #expect(mosque.website == URL(string: "https://example.org/"))
+    }
+
+    @Test func readsAMosqueWithoutAWebsite() throws {
+        let response = try #require(try ServerPrayerTimesProvider.response(from: body, statusCode: 200))
+
+        guard case let .mosque(mosque, _) = response.source else {
+            Issue.record("Expected a mosque source")
+            return
+        }
+        #expect(mosque.website == nil)
+    }
+
     @Test func readsTheTimetableVersion() throws {
         let response = try #require(try ServerPrayerTimesProvider.response(from: body, statusCode: 200))
 

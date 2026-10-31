@@ -22,6 +22,22 @@ struct TimetableCacheTests {
         #expect(cache.load() == response)
     }
 
+    @Test func readsAMosqueSavedBeforeItHadAWebsite() throws {
+        let saved = Data("""
+        {
+          "id": "masjid",
+          "name": "Masjid Solihull",
+          "address": "1 High Street, Solihull",
+          "coordinate": {"latitude": 52.4118, "longitude": -1.7776}
+        }
+        """.utf8)
+
+        let mosque = try JSONDecoder().decode(Mosque.self, from: saved)
+
+        #expect(mosque.id == "masjid")
+        #expect(mosque.website == nil)
+    }
+
     @Test func returnsTheLastSavedCoordinate() {
         let cache = TimetableCache(suiteName: suiteName)
         defer { UserDefaults().removePersistentDomain(forName: suiteName) }
