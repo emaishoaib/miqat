@@ -14,7 +14,6 @@ struct NextPrayerRectangularView: View {
                 Text(next.begins.formatted(date: .omitted, time: .shortened))
             }
             Text(next.begins, style: .relative)
-                .foregroundStyle(.secondary)
         }
         .font(.body)
         .lineLimit(1)

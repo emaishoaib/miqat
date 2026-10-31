@@ -23,7 +23,6 @@ struct NextPrayerRectangularView: View {
                     Text(NextPrayerComplicationView.shortTime(next.begins))
                 }
                 Text(next.begins, style: .relative)
-                    .opacity(0.7)
             }
             Spacer(minLength: 0)
         }
