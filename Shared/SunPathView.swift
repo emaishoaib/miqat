@@ -16,9 +16,11 @@ struct SunPathView: View {
     @State private var rippleAt: Date?
     @State private var dayOffset = 0
     @State private var draggedTime: Date?
+    @State private var spin: SunSpin?
     @State private var isRefreshing = false
     @State private var systemIsDark = Self.systemIsDark()
     @AppStorage(Appearance.key, store: Appearance.store) private var appearance = Appearance.sun
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var shownTime: Date {
         draggedTime ?? now
@@ -45,7 +47,7 @@ struct SunPathView: View {
                         LinearKeyframe(1, duration: 0.9)
                     }
                     .overlay {
-                        SunHandle(angle: path.angle(at: shownTime), onDrag: drag(toAngle:), onRelease: { draggedTime = nil })
+                        SunHandle(angle: path.angle(at: shownTime), onDrag: drag(toAngle:), onRelease: spinBack)
                     }
                     .onAppear {
                         guard !Self.hasGrownIn else { return }
@@ -99,6 +101,18 @@ struct SunPathView: View {
             dayOffset = 0
         }
         .background {
+            if let spin {
+                TimelineView(.animation) { frame in
+                    Color.clear.onChange(of: frame.date) {
+                        draggedTime = spin.time(at: frame.date, returningTo: now)
+                        if draggedTime == nil {
+                            self.spin = nil
+                        }
+                    }
+                }
+            }
+        }
+        .background {
             (usesDayColours(on: path) ? Palette.day : Palette.night)
                 .ignoresSafeArea()
                 .animation(.easeInOut(duration: 1.2), value: usesDayColours(on: path))
@@ -140,8 +154,17 @@ struct SunPathView: View {
         guard let path = response.sunPath(on: shownTime) else { return }
         let time = response.closestCoveredTime(to: path.date(at: angle, closestTo: shownTime))
         guard abs(time.timeIntervalSince(shownTime)) < Self.longestDragStep else { return }
+        spin = nil
         dayOffset = 0
         draggedTime = time
+    }
+
+    private func spinBack() {
+        guard let draggedTime, !reduceMotion else {
+            draggedTime = nil
+            return
+        }
+        spin = SunSpin(from: draggedTime, begins: .now)
     }
 
     private func browse(by step: Int, from index: Int) {
@@ -156,6 +179,24 @@ struct SunPathView: View {
         isRefreshing = true
         await refresh()
         isRefreshing = false
+    }
+}
+
+private struct SunSpin {
+    private static let secondsPerLoop: TimeInterval = 0.7
+    private static let shortest: TimeInterval = 0.4
+    private static let longest: TimeInterval = 3
+    private static let day: TimeInterval = 24 * 60 * 60
+
+    let from: Date
+    let begins: Date
+
+    func time(at frame: Date, returningTo now: Date) -> Date? {
+        let distance = now.timeIntervalSince(from)
+        let duration = min(max(abs(distance) / Self.day * Self.secondsPerLoop, Self.shortest), Self.longest)
+        let progress = max(frame.timeIntervalSince(begins) / duration, 0)
+        guard progress < 1 else { return nil }
+        return from.addingTimeInterval(distance * UnitCurve.easeInOut.value(at: progress))
     }
 }
 
