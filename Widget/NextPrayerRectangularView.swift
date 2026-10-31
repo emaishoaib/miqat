@@ -7,6 +7,7 @@ struct NextPrayerRectangularView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            Text(HijriDate.formatted(hijriDate))
             HStack(spacing: 6) {
                 Text(next.prayer.name)
                     .fontWeight(.semibold)
@@ -14,7 +15,6 @@ struct NextPrayerRectangularView: View {
             }
             Text(next.begins, style: .relative)
                 .foregroundStyle(.secondary)
-            Text(HijriDate.formatted(hijriDate))
         }
         .font(.body)
         .lineLimit(1)
