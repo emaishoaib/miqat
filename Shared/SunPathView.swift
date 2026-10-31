@@ -28,7 +28,7 @@ struct SunPathView: View {
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, hijriDate: shown?.hijriDate(at: now) ?? now, source: response.source, isRefreshing: isRefreshing) {
+                Header(date: shown?.date ?? now, hijriDate: shown?.hijriDate(at: now) ?? now, source: shown?.source ?? response.source, isRefreshing: isRefreshing) {
                     await refreshShowingProgress()
                 }
                 if let path, let next, let today {

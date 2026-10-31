@@ -82,7 +82,7 @@ struct TimesExplanationView: View {
         case .city(let name, let method, let asrSchool):
             Paragraph(
                 title: "Calculated for \(name)",
-                text: "None of the mosques near you has a timetable in Miqat yet, so the times are calculated for your city from the position of the sun."
+                text: "None of the mosques near you has a timetable in Miqat for this day, so the times are calculated for your city from the position of the sun."
             )
             if let method, let asrSchool {
                 Paragraph(
