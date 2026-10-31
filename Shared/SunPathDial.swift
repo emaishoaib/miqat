@@ -102,7 +102,7 @@ struct SunPathDial: View {
             context.draw(countdown, at: CGPoint(x: x, y: horizonY + gap), anchor: .top)
 
             if !isCompact {
-                let label = context.resolve(Text("Next prayer").font(.caption).foregroundStyle(Palette.ink.opacity(0.7)))
+                let label = context.resolve(Text(next.prayer == .sunrise ? "Fajr until" : "Next prayer").font(.caption).foregroundStyle(Palette.ink.opacity(0.7)))
                 let time = context.resolve(Text("at \(next.begins.formatted(date: .omitted, time: .shortened))").font(.subheadline).foregroundStyle(Palette.ink.opacity(0.7)))
                 context.draw(label, at: CGPoint(x: x, y: horizonY - gap - name.measure(in: size).height), anchor: .bottom)
                 context.draw(time, at: CGPoint(x: x, y: horizonY + gap + countdown.measure(in: size).height), anchor: .top)
