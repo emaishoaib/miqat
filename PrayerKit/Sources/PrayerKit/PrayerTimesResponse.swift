@@ -16,6 +16,6 @@ public struct PrayerTimesResponse: Codable, Hashable, Sendable {
     }
 
     public func nextPrayer(after date: Date) -> PrayerTime? {
-        days.lazy.flatMap(\.times).first { $0.prayer.isPrayer && $0.begins > date }
+        days.lazy.flatMap(\.times).first { $0.begins > date }
     }
 }

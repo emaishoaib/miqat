@@ -28,8 +28,18 @@ struct PrayerTimesResponseTests {
         #expect(response.nextPrayer(after: date(hour: 13, minute: 0))?.prayer == .asr)
     }
 
-    @Test func nextPrayerSkipsSunrise() async throws {
+    @Test func nextPrayerIsSunriseDuringFajr() async throws {
         let response = try await response(from: .now)
+
+        #expect(response.nextPrayer(after: date(hour: 6, minute: 0))?.prayer == .sunrise)
+    }
+
+    @Test func nextPrayerIsDhuhrWhenTheDayHasNoSunrise() {
+        let day = PrayerDay(date: date(hour: 0, minute: 0), times: [
+            PrayerTime(prayer: .fajr, begins: date(hour: 5, minute: 52)),
+            PrayerTime(prayer: .dhuhr, begins: date(hour: 12, minute: 49)),
+        ])
+        let response = PrayerTimesResponse(source: .city(name: "Solihull"), days: [day])
 
         #expect(response.nextPrayer(after: date(hour: 6, minute: 0))?.prayer == .dhuhr)
     }

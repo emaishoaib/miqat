@@ -28,7 +28,7 @@ struct PrayerTimelineProvider: TimelineProvider {
             let minute = Calendar.current.dateInterval(of: .minute, for: now)?.start ?? now
             changes = (1...Self.minuteEntries).compactMap { Calendar.current.date(byAdding: .minute, value: $0, to: minute) }
         } else {
-            let prayerStarts = response?.days.flatMap(\.times).filter(\.prayer.isPrayer).map(\.begins) ?? []
+            let prayerStarts = response?.days.flatMap(\.times).map(\.begins) ?? []
             let dayStarts = response?.days.map(\.date) ?? []
             changes = Set(prayerStarts + dayStarts).filter { $0 > now }.sorted()
         }

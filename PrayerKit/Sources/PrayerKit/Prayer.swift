@@ -16,8 +16,4 @@ public enum Prayer: String, CaseIterable, Codable, Hashable, Sendable {
         case .isha: "Isha"
         }
     }
-
-    public var isPrayer: Bool {
-        self != .sunrise
-    }
 }
