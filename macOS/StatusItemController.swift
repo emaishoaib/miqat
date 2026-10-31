@@ -24,6 +24,9 @@ final class StatusItemController: NSObject {
         content.sizingOptions = []
         super.init()
 
+        content.rootView.onOpenURL = { [weak self] in
+            self?.dismiss()
+        }
         panel.contentViewController = content
         panel.isOpaque = false
         panel.backgroundColor = .clear

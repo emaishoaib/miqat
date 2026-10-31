@@ -18,6 +18,7 @@ struct PopUpContent: View {
     static let height: CGFloat = 680
 
     let model: TimetableModel
+    var onOpenURL: () -> Void = {}
 
     @State private var settings = SettingsPage.shared
 
@@ -30,5 +31,9 @@ struct PopUpContent: View {
         }
         .frame(width: Self.width, height: Self.height)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .environment(\.openURL, OpenURLAction { _ in
+            onOpenURL()
+            return .systemAction
+        })
     }
 }
