@@ -3,10 +3,12 @@ import Foundation
 public struct PrayerDay: Codable, Hashable, Sendable {
     public let date: Date
     public let times: [PrayerTime]
+    public let source: TimesSource?
 
-    public init(date: Date, times: [PrayerTime]) {
+    public init(date: Date, times: [PrayerTime], source: TimesSource? = nil) {
         self.date = date
         self.times = times
+        self.source = source
     }
 
     public func time(for prayer: Prayer) -> PrayerTime? {

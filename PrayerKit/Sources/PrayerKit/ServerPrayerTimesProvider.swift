@@ -77,6 +77,8 @@ private struct ServerTimetable: Decodable {
 
     struct Day: Decodable {
         let date: String
+        let mosque: Mosque?
+        let city: City?
         let times: [Time]
     }
 
@@ -93,6 +95,12 @@ private struct ServerTimetable: Decodable {
     let days: [Day]
 
     func response() throws -> PrayerTimesResponse {
+        guard let source = Self.source(mosque: mosque, city: city) else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(codingPath: [], debugDescription: "The timetable has neither a mosque nor a city.")
+            )
+        }
+
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: timeZone) ?? .current
         let dateFormat = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
@@ -100,13 +108,14 @@ private struct ServerTimetable: Decodable {
         let prayerDays = try days.map { day in
             PrayerDay(
                 date: calendar.startOfDay(for: try dateFormat.parse(day.date)),
-                times: day.times.map { PrayerTime(prayer: $0.prayer, begins: $0.begins, jamaat: $0.jamaat) }
+                times: day.times.map { PrayerTime(prayer: $0.prayer, begins: $0.begins, jamaat: $0.jamaat) },
+                source: Self.source(mosque: day.mosque, city: day.city)
             )
         }
-        return PrayerTimesResponse(source: try source(), days: prayerDays, version: version)
+        return PrayerTimesResponse(source: source, days: prayerDays, version: version)
     }
 
-    private func source() throws -> TimesSource {
+    private static func source(mosque: Mosque?, city: City?) -> TimesSource? {
         if let mosque {
             return .mosque(
                 PrayerKit.Mosque(
@@ -122,8 +131,6 @@ private struct ServerTimetable: Decodable {
         if let city {
             return .city(name: city.name, method: city.method, asrSchool: city.asrSchool)
         }
-        throw DecodingError.dataCorrupted(
-            DecodingError.Context(codingPath: [], debugDescription: "The timetable has neither a mosque nor a city.")
-        )
+        return nil
     }
 }

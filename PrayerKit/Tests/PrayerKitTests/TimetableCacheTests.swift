@@ -38,6 +38,14 @@ struct TimetableCacheTests {
         #expect(mosque.website == nil)
     }
 
+    @Test func readsADaySavedBeforeItHadASource() throws {
+        let saved = Data(#"{"date":0,"times":[]}"#.utf8)
+
+        let day = try JSONDecoder().decode(PrayerDay.self, from: saved)
+
+        #expect(day.source == nil)
+    }
+
     @Test func returnsTheLastSavedCoordinate() {
         let cache = TimetableCache(suiteName: suiteName)
         defer { UserDefaults().removePersistentDomain(forName: suiteName) }

@@ -33,6 +33,11 @@ public struct MockPrayerTimesProvider: PrayerTimesProvider {
         calendar.timeZone = timeZone
         let firstDay = calendar.startOfDay(for: start)
 
+        let mosque = Self.sampleMosque
+        let distance = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            .distance(from: CLLocation(latitude: mosque.coordinate.latitude, longitude: mosque.coordinate.longitude))
+        let source = TimesSource.mosque(mosque, distanceInMeters: distance)
+
         let prayerDays = (0..<max(days, 0)).compactMap { offset -> PrayerDay? in
             guard let day = calendar.date(byAdding: .day, value: offset, to: firstDay) else { return nil }
             let times = Self.schedule.compactMap { entry -> PrayerTime? in
@@ -40,13 +45,9 @@ public struct MockPrayerTimesProvider: PrayerTimesProvider {
                 let jamaat = entry.jamaat.flatMap { calendar.date(bySettingHour: $0.hour, minute: $0.minute, second: 0, of: day) }
                 return PrayerTime(prayer: entry.prayer, begins: begins, jamaat: jamaat)
             }
-            return PrayerDay(date: day, times: times)
+            return PrayerDay(date: day, times: times, source: source)
         }
 
-        let mosque = Self.sampleMosque
-        let distance = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-            .distance(from: CLLocation(latitude: mosque.coordinate.latitude, longitude: mosque.coordinate.longitude))
-
-        return PrayerTimesResponse(source: .mosque(mosque, distanceInMeters: distance), days: prayerDays)
+        return PrayerTimesResponse(source: source, days: prayerDays)
     }
 }

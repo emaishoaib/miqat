@@ -134,6 +134,55 @@ struct ServerPrayerTimesProviderTests {
         #expect(response.source == .city(name: "Solihull", method: "Moonsighting Committee Worldwide", asrSchool: "Hanafi"))
     }
 
+    @Test func readsTheSourceOfEachDay() throws {
+        let mixedBody = Data("""
+        {
+          "version": "masjid:3+place-solihull:1",
+          "mosque": null,
+          "city": {"id": "place-solihull", "name": "Solihull"},
+          "time_zone": "Europe/London",
+          "days": [
+            {
+              "date": "2027-06-01",
+              "mosque": {
+                "id": "masjid",
+                "name": "Masjid Solihull",
+                "address": "1 High Street, Solihull",
+                "latitude": 52.4118,
+                "longitude": -1.7776,
+                "distance_meters": 120.5
+              },
+              "city": null,
+              "times": []
+            },
+            {
+              "date": "2027-06-02",
+              "mosque": null,
+              "city": {"id": "place-solihull", "name": "Solihull"},
+              "times": []
+            }
+          ]
+        }
+        """.utf8)
+
+        let response = try #require(try ServerPrayerTimesProvider.response(from: mixedBody, statusCode: 200))
+
+        #expect(response.source == .city(name: "Solihull"))
+        guard case let .mosque(mosque, distance) = response.days[0].source else {
+            Issue.record("Expected a mosque source")
+            return
+        }
+        #expect(mosque.id == "masjid")
+        #expect(distance == 120.5)
+        #expect(response.days[1].source == .city(name: "Solihull"))
+    }
+
+    @Test func readsADayThatDoesNotNameItsSource() throws {
+        let response = try #require(try ServerPrayerTimesProvider.response(from: body, statusCode: 200))
+
+        #expect(response.days.first?.source == nil)
+    }
+
     @Test func reportsUnavailableWhenTheServerHasNoTimes() {
         #expect(throws: PrayerTimesError.unavailable) {
             try ServerPrayerTimesProvider.response(from: Data(), statusCode: 404)
