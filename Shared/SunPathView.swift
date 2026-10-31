@@ -14,26 +14,31 @@ struct SunPathView: View {
     @State private var launch: Double = hasGrownIn ? 1 : 0
     @State private var rippleAt: Date?
     @State private var dayOffset = 0
+    @State private var draggedTime: Date?
     @State private var isRefreshing = false
     @State private var systemIsDark = Self.systemIsDark()
     @AppStorage(Appearance.key, store: Appearance.store) private var appearance = Appearance.sun
 
+    private var shownTime: Date {
+        draggedTime ?? now
+    }
+
     var body: some View {
-        let path = response.sunPath(on: now)
-        let next = response.nextPrayer(after: now)
-        let today = response.day(containing: now)
+        let path = response.sunPath(on: shownTime)
+        let next = response.nextPrayer(after: shownTime)
+        let today = response.day(containing: shownTime)
         let listed = next.flatMap { response.day(containing: $0.begins) } ?? today
         let shownIndex = listed.flatMap { response.days.firstIndex(of: $0) }.map { min(max($0 + dayOffset, 0), response.days.count - 1) }
         let shown = shownIndex.map { response.days[$0] }
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? now, hijriDate: shown?.hijriDate(at: now) ?? now, source: shown?.source ?? response.source, isRefreshing: isRefreshing) {
+                Header(date: shown?.date ?? shownTime, hijriDate: shown?.hijriDate(at: shownTime) ?? shownTime, source: shown?.source ?? response.source, isRefreshing: isRefreshing) {
                     await refreshShowingProgress()
                 }
                 if let path, let next, let today {
                     KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
-                        SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: usesDayColours(on: path), launch: launch, ripple: ripple, rippleAt: rippleAt)
+                        SunPathDial(day: today, path: path, next: next, now: shownTime, usesDayColours: usesDayColours(on: path), launch: launch, ripple: ripple, rippleAt: rippleAt)
                     } keyframes: { _ in
                         MoveKeyframe(0)
                         LinearKeyframe(1, duration: 0.9)
@@ -52,7 +57,7 @@ struct SunPathView: View {
                         DayChevron(systemName: "chevron.left", label: "Previous day", isShown: shownIndex > 0, width: gap) {
                             browse(by: -1, from: shownIndex)
                         }
-                        PrayerList(day: shown, next: next, now: now)
+                        PrayerList(day: shown, next: next, now: shownTime)
                         DayChevron(systemName: "chevron.right", label: "Next day", isShown: shownIndex < response.days.count - 1, width: gap) {
                             browse(by: 1, from: shownIndex)
                         }
@@ -81,7 +86,7 @@ struct SunPathView: View {
             await refreshShowingProgress()
         }
         #endif
-        .onChange(of: next?.begins) { began, _ in
+        .onChange(of: response.nextPrayer(after: now)?.begins) { began, _ in
             if let began, began <= now {
                 rippleAt = began
             }
@@ -124,7 +129,7 @@ struct SunPathView: View {
 
     private func isDay(on path: SunPath?) -> Bool {
         guard let path else { return true }
-        return now >= path.sunrise && now < path.maghrib
+        return shownTime >= path.sunrise && shownTime < path.maghrib
     }
 
     private func browse(by step: Int, from index: Int) {
