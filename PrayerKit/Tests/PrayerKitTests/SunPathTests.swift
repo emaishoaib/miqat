@@ -55,6 +55,28 @@ struct SunPathTests {
         #expect(path.angle(at: hours(45)) == -180)
     }
 
+    @Test func angleAboveTheHorizonGivesTheTimeInTheDay() {
+        #expect(path.date(at: 180, closestTo: hours(14)) == hours(14))
+        #expect(path.date(at: 90, closestTo: hours(19)) == hours(19))
+    }
+
+    @Test func angleBelowTheHorizonGivesTheClosestNight() {
+        #expect(path.date(at: -90, closestTo: hours(10)) == hours(7))
+        #expect(path.date(at: -90, closestTo: hours(30)) == hours(31))
+    }
+
+    @Test func angleOnTheHorizonGivesTheClosestMaghrib() {
+        #expect(path.date(at: 0, closestTo: hours(1)) == hours(0))
+        #expect(path.date(at: 0, closestTo: hours(23)) == hours(24))
+    }
+
+    @Test func everyTimeOnThePathSurvivesTheTripThroughItsAngle() {
+        for hour in stride(from: 0.0, through: 38.0, by: 0.5) {
+            let date = path.date(at: path.angle(at: hours(hour)), closestTo: hours(hour))
+            #expect(abs(date.timeIntervalSince(hours(hour))) < 0.001)
+        }
+    }
+
     @Test func responseBuildsThePathFromNeighbouringDays() throws {
         let response = MockPrayerTimesProvider(timeZone: london).response(near: solihull, from: date(hour: 0, minute: 0, dayOffset: -1), days: 3)
         let path = try #require(response.sunPath(on: date(hour: 12, minute: 0), calendar: calendar))

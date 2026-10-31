@@ -23,8 +23,21 @@ public struct SunPath: Hashable, Sendable {
         return -180 * Self.fraction(of: date, from: maghrib, to: nextSunrise)
     }
 
+    public func date(at angle: Double, closestTo date: Date) -> Date {
+        if angle > 0 {
+            return Self.date(atFraction: (180 - angle) / 180, from: sunrise, to: maghrib)
+        }
+        let before = Self.date(atFraction: -angle / 180, from: previousMaghrib, to: sunrise)
+        let after = Self.date(atFraction: -angle / 180, from: maghrib, to: nextSunrise)
+        return abs(before.timeIntervalSince(date)) < abs(after.timeIntervalSince(date)) ? before : after
+    }
+
     private static func fraction(of date: Date, from start: Date, to end: Date) -> Double {
         min(max(date.timeIntervalSince(start) / end.timeIntervalSince(start), 0), 1)
+    }
+
+    private static func date(atFraction fraction: Double, from start: Date, to end: Date) -> Date {
+        start.addingTimeInterval(end.timeIntervalSince(start) * fraction)
     }
 }
 
