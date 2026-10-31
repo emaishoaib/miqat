@@ -99,6 +99,10 @@ targets:
       - Icon/AppIcon.icon
     dependencies:
       - package: PrayerKit
+    entitlements:
+      path: macOS/Miqat.entitlements
+      properties:
+        com.apple.security.personal-information.location: true
     info:
       path: macOS/Info.plist
       properties:
@@ -108,6 +112,7 @@ targets:
         PRODUCT_NAME: Miqat
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.mashoaib.miqat
+        ENABLE_HARDENED_RUNTIME: YES
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Miqat
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
