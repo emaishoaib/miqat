@@ -139,8 +139,12 @@ struct SunPathDial: View {
     }
 
     static func countdown(to date: Date, from now: Date) -> String {
+        "in \(timeLeft(to: date, from: now))"
+    }
+
+    static func timeLeft(to date: Date, from now: Date) -> String {
         let minutes = Int((date.timeIntervalSince(now) / 60).rounded(.up))
-        return minutes >= 60 ? "in \(minutes / 60)h \(minutes % 60)m" : "in \(minutes)m"
+        return minutes >= 60 ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
     }
 
     static func countdownColor(to date: Date, from now: Date, usesDayColours: Bool) -> Color {

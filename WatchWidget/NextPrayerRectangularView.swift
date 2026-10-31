@@ -17,10 +17,9 @@ struct NextPrayerRectangularView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(next.prayer.name)
                     .font(.system(size: 15, weight: .semibold))
-                Text(SunPathDial.countdown(to: next.begins, from: date))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(SunPathDial.countdownColor(to: next.begins, from: date, usesDayColours: false))
-                Text("at \(NextPrayerComplicationView.shortTime(next.begins))")
+                Text(NextPrayerComplicationView.shortTime(next.begins))
+                    .font(.system(size: 13))
+                Text(SunPathDial.timeLeft(to: next.begins, from: date))
                     .font(.system(size: 13))
                     .opacity(0.7)
             }
