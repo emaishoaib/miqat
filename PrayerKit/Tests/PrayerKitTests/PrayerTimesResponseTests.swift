@@ -58,4 +58,24 @@ struct PrayerTimesResponseTests {
 
         #expect(response.day(containing: tomorrow, calendar: calendar) == response.days.last)
     }
+
+    @Test func coveredTimeLeavesATimeInsideTheDaysAlone() async throws {
+        let response = try await response(from: .now)
+        let noon = date(hour: 12, minute: 0)
+
+        #expect(response.closestCoveredTime(to: noon, calendar: calendar) == noon)
+    }
+
+    @Test func coveredTimeStopsAtTheStartOfTheFirstDay() async throws {
+        let response = try await response(from: .now)
+
+        #expect(response.closestCoveredTime(to: date(hour: 12, minute: 0, dayOffset: -1), calendar: calendar) == date(hour: 0, minute: 0))
+    }
+
+    @Test func coveredTimeStopsWhileTheLastPrayerIsStillToBegin() async throws {
+        let response = try await response(from: .now)
+        let time = response.closestCoveredTime(to: date(hour: 12, minute: 0, dayOffset: 5), calendar: calendar)
+
+        #expect(response.nextPrayer(after: time) == response.days.last?.times.last)
+    }
 }

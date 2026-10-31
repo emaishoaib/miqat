@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SunPathView: View {
     private static let margin: CGFloat = 20
+    private static let longestDragStep: TimeInterval = 6 * 60 * 60
 
     let response: PrayerTimesResponse
     let now: Date
@@ -42,6 +43,9 @@ struct SunPathView: View {
                     } keyframes: { _ in
                         MoveKeyframe(0)
                         LinearKeyframe(1, duration: 0.9)
+                    }
+                    .overlay {
+                        SunHandle(angle: path.angle(at: shownTime), onDrag: drag(toAngle:), onRelease: { draggedTime = nil })
                     }
                     .onAppear {
                         guard !Self.hasGrownIn else { return }
@@ -132,6 +136,14 @@ struct SunPathView: View {
         return shownTime >= path.sunrise && shownTime < path.maghrib
     }
 
+    private func drag(toAngle angle: Double) {
+        guard let path = response.sunPath(on: shownTime) else { return }
+        let time = response.closestCoveredTime(to: path.date(at: angle, closestTo: shownTime))
+        guard abs(time.timeIntervalSince(shownTime)) < Self.longestDragStep else { return }
+        dayOffset = 0
+        draggedTime = time
+    }
+
     private func browse(by step: Int, from index: Int) {
         guard response.days.indices.contains(index + step) else { return }
         withAnimation {
@@ -144,6 +156,49 @@ struct SunPathView: View {
         isRefreshing = true
         await refresh()
         isRefreshing = false
+    }
+}
+
+private struct SunHandle: View {
+    private static let size: CGFloat = 56
+    private static let space = "dial"
+
+    let angle: Double
+    let onDrag: (Double) -> Void
+    let onRelease: () -> Void
+
+    @State private var grabOffset: Double?
+
+    var body: some View {
+        GeometryReader { proxy in
+            let scale = proxy.size.width / SunPathDial.canvas.width
+            let sun = SunPathDial.point(at: angle)
+
+            Circle()
+                .fill(.clear)
+                .contentShape(Circle())
+                .frame(width: Self.size, height: Self.size)
+                .position(x: sun.x * scale, y: sun.y * scale)
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.space))
+                        .onChanged { drag in
+                            let finger = SunPathDial.angle(of: drag.location, scale: scale)
+                            let offset = grabOffset ?? angle - finger
+                            grabOffset = offset
+                            onDrag(Self.wrapped(finger + offset))
+                        }
+                        .onEnded { _ in
+                            grabOffset = nil
+                            onRelease()
+                        }
+                )
+        }
+        .coordinateSpace(.named(Self.space))
+    }
+
+    private static func wrapped(_ angle: Double) -> Double {
+        let degrees = (angle + 180).truncatingRemainder(dividingBy: 360)
+        return (degrees <= 0 ? degrees + 360 : degrees) - 180
     }
 }
 

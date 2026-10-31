@@ -18,4 +18,9 @@ public struct PrayerTimesResponse: Codable, Hashable, Sendable {
     public func nextPrayer(after date: Date) -> PrayerTime? {
         days.lazy.flatMap(\.times).first { $0.begins > date }
     }
+
+    public func closestCoveredTime(to date: Date, calendar: Calendar = .current) -> Date {
+        guard let first = days.first?.date, let last = days.last?.times.last?.begins else { return date }
+        return min(max(date, calendar.startOfDay(for: first)), last.addingTimeInterval(-1))
+    }
 }

@@ -64,13 +64,13 @@ struct SunPathDial: View {
             context.stroke(horizon, with: .color(Palette.ink), style: StrokeStyle(lineWidth: 3 * weight * scale, lineCap: .round))
 
             for time in day.times.map({ $0.prayer == next.prayer ? next : $0 }) {
-                let dot = circle(around: point(at: path.angle(at: time.begins)), radius: 5 * weight, scale: scale)
+                let dot = circle(around: Self.point(at: path.angle(at: time.begins)), radius: 5 * weight, scale: scale)
                 context.fill(Path(ellipseIn: dot), with: .color(Palette.ink.opacity(time.begins <= now ? 0.4 : 1)))
             }
 
             if ringGrowth > 0 {
                 context.stroke(
-                    Path(ellipseIn: circle(around: point(at: path.angle(at: next.begins)), radius: 10 * weight * ringGrowth, scale: scale)),
+                    Path(ellipseIn: circle(around: Self.point(at: path.angle(at: next.begins)), radius: 10 * weight * ringGrowth, scale: scale)),
                     with: .color(Palette.gold),
                     lineWidth: 2 * weight * scale
                 )
@@ -78,7 +78,7 @@ struct SunPathDial: View {
 
             if let rippleAt, ripple < 1 {
                 context.stroke(
-                    Path(ellipseIn: circle(around: point(at: path.angle(at: rippleAt)), radius: 5 + 21 * ripple, scale: scale)),
+                    Path(ellipseIn: circle(around: Self.point(at: path.angle(at: rippleAt)), radius: 5 + 21 * ripple, scale: scale)),
                     with: .color(Palette.gold.opacity(0.9 * (1 - ripple))),
                     lineWidth: 2 * scale
                 )
@@ -86,7 +86,7 @@ struct SunPathDial: View {
 
             let isDay = now >= path.sunrise && now < path.maghrib
             context.fill(
-                Path(ellipseIn: circle(around: point(at: sunAngle), radius: 13 * weight * sunGrowth, scale: scale)),
+                Path(ellipseIn: circle(around: Self.point(at: sunAngle), radius: 13 * weight * sunGrowth, scale: scale)),
                 with: .color((isDay ? Palette.gold : Palette.gold.mix(with: Palette.night, by: 0.5, in: .device)).opacity(sunGrowth))
             )
 
@@ -111,9 +111,13 @@ struct SunPathDial: View {
         .aspectRatio(Self.canvas, contentMode: .fit)
     }
 
-    private func point(at angle: Double) -> CGPoint {
+    static func point(at angle: Double) -> CGPoint {
         let radians = angle * .pi / 180
-        return CGPoint(x: Self.center.x + Self.radius * cos(radians), y: Self.center.y - Self.radius * sin(radians))
+        return CGPoint(x: center.x + radius * cos(radians), y: center.y - radius * sin(radians))
+    }
+
+    static func angle(of location: CGPoint, scale: CGFloat) -> Double {
+        atan2(center.y * scale - location.y, location.x - center.x * scale) * 180 / .pi
     }
 
     private static func travel(from start: Double, to end: Double) -> Double {
