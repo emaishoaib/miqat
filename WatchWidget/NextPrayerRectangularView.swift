@@ -15,6 +15,8 @@ struct NextPrayerRectangularView: View {
                     .frame(width: 62)
             }
             VStack(alignment: .leading, spacing: 0) {
+                Text(HijriDate.formatted(hijriDate))
+                    .minimumScaleFactor(0.8)
                 HStack(spacing: 6) {
                     Text(next.prayer.name)
                         .fontWeight(.semibold)
@@ -22,8 +24,6 @@ struct NextPrayerRectangularView: View {
                 }
                 Text(SunPathDial.timeLeft(to: next.begins, from: date))
                     .opacity(0.7)
-                Text(HijriDate.formatted(hijriDate))
-                    .minimumScaleFactor(0.8)
             }
             Spacer(minLength: 0)
         }
