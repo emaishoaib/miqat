@@ -14,7 +14,6 @@ struct SunPathView: View {
 
     @State private var launch: Double = hasGrownIn ? 1 : 0
     @State private var rippleAt: Date?
-    @State private var dayOffset = 0
     @State private var draggedTime: Date?
     @State private var spin: SunSpin?
     @State private var isRefreshing = false
@@ -30,9 +29,7 @@ struct SunPathView: View {
         let path = response.sunPath(on: shownTime)
         let next = response.nextPrayer(after: shownTime)
         let today = response.day(containing: shownTime)
-        let listed = next.flatMap { response.day(containing: $0.begins) } ?? today
-        let shownIndex = listed.flatMap { response.days.firstIndex(of: $0) }.map { min(max($0 + dayOffset, 0), response.days.count - 1) }
-        let shown = shownIndex.map { response.days[$0] }
+        let shown = next.flatMap { response.day(containing: $0.begins) } ?? today
 
         ScrollView {
             VStack(spacing: 28) {
@@ -47,7 +44,7 @@ struct SunPathView: View {
                         LinearKeyframe(1, duration: 0.9)
                     }
                     .overlay {
-                        SunHandle(angle: path.angle(at: shownTime), onDrag: drag(toAngle:), onRelease: spinBack)
+                        SunHandle(angle: path.angle(at: shownTime), day: shown?.date ?? shownTime, onDrag: drag(toAngle:), onRelease: spinBack, onStep: step(byDays:))
                     }
                     .onAppear {
                         guard !Self.hasGrownIn else { return }
@@ -57,26 +54,9 @@ struct SunPathView: View {
                         }
                     }
                 }
-                if let shown, let shownIndex {
-                    let gap = contentWidth * SunPathDial.horizonInset / SunPathDial.canvas.width + Self.margin
-                    HStack(spacing: 0) {
-                        DayChevron(systemName: "chevron.left", label: "Previous day", isShown: shownIndex > 0, width: gap) {
-                            browse(by: -1, from: shownIndex)
-                        }
-                        PrayerList(day: shown, next: next, now: shownTime)
-                        DayChevron(systemName: "chevron.right", label: "Next day", isShown: shownIndex < response.days.count - 1, width: gap) {
-                            browse(by: 1, from: shownIndex)
-                        }
-                    }
-                    .padding(.horizontal, -Self.margin)
-                    #if os(iOS)
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 30).onEnded { drag in
-                            guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
-                            browse(by: drag.translation.width < 0 ? 1 : -1, from: shownIndex)
-                        }
-                    )
-                    #endif
+                if let shown {
+                    PrayerList(day: shown, next: next, now: shownTime)
+                        .padding(.horizontal, contentWidth * SunPathDial.horizonInset / SunPathDial.canvas.width)
                 }
             }
             .onGeometryChange(for: CGFloat.self) { proxy in
@@ -96,9 +76,6 @@ struct SunPathView: View {
             if let began, began <= now {
                 rippleAt = began
             }
-        }
-        .onChange(of: listed?.date) {
-            dayOffset = 0
         }
         .background {
             if let spin {
@@ -155,7 +132,6 @@ struct SunPathView: View {
         let time = response.closestCoveredTime(to: path.date(at: angle, closestTo: shownTime))
         guard abs(time.timeIntervalSince(shownTime)) < Self.longestDragStep else { return }
         spin = nil
-        dayOffset = 0
         draggedTime = time
     }
 
@@ -167,11 +143,10 @@ struct SunPathView: View {
         spin = SunSpin(from: draggedTime, begins: .now)
     }
 
-    private func browse(by step: Int, from index: Int) {
-        guard response.days.indices.contains(index + step) else { return }
-        withAnimation {
-            dayOffset += step
-        }
+    private func step(byDays days: Int) {
+        guard let time = Calendar.current.date(byAdding: .day, value: days, to: shownTime) else { return }
+        spin = nil
+        draggedTime = Calendar.current.isDate(time, inSameDayAs: now) ? nil : response.closestCoveredTime(to: time)
     }
 
     private func refreshShowingProgress() async {
@@ -205,8 +180,10 @@ private struct SunHandle: View {
     private static let space = "dial"
 
     let angle: Double
+    let day: Date
     let onDrag: (Double) -> Void
     let onRelease: () -> Void
+    let onStep: (Int) -> Void
 
     @State private var grabOffset: Double?
 
@@ -219,6 +196,17 @@ private struct SunHandle: View {
                 .fill(.clear)
                 .contentShape(Circle())
                 .frame(width: Self.size, height: Self.size)
+                .accessibilityElement()
+                .accessibilityLabel("Sun")
+                .accessibilityValue(day.formatted(date: .complete, time: .omitted))
+                .accessibilityHint("Swipe up or down to move between days")
+                .accessibilityAdjustableAction { direction in
+                    switch direction {
+                    case .increment: onStep(1)
+                    case .decrement: onStep(-1)
+                    @unknown default: break
+                    }
+                }
                 .position(x: sun.x * scale, y: sun.y * scale)
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.space))
@@ -240,29 +228,6 @@ private struct SunHandle: View {
     private static func wrapped(_ angle: Double) -> Double {
         let degrees = (angle + 180).truncatingRemainder(dividingBy: 360)
         return (degrees <= 0 ? degrees + 360 : degrees) - 180
-    }
-}
-
-private struct DayChevron: View {
-    let systemName: String
-    let label: String
-    let isShown: Bool
-    let width: CGFloat
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(Palette.ink.opacity(0.45))
-                .frame(width: width)
-                .frame(maxHeight: .infinity)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .opacity(isShown ? 1 : 0)
-        .disabled(!isShown)
-        .accessibilityLabel(label)
     }
 }
 
