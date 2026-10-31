@@ -15,26 +15,19 @@ struct NextPrayerRectangularView: View {
                     .frame(width: 54)
             }
             VStack(alignment: .leading, spacing: 0) {
-                Text(next.prayer.name)
-                    .font(.system(size: 15, weight: .semibold))
-                Text(NextPrayerComplicationView.shortTime(next.begins))
-                    .font(.system(size: 13))
+                HStack(spacing: 6) {
+                    Text(next.prayer.name)
+                        .fontWeight(.semibold)
+                    Text(NextPrayerComplicationView.shortTime(next.begins))
+                }
                 Text(SunPathDial.timeLeft(to: next.begins, from: date))
-                    .font(.system(size: 13))
                     .opacity(0.7)
+                Text(HijriDate.formatted(hijriDate))
+                    .minimumScaleFactor(0.8)
             }
             Spacer(minLength: 0)
-            VStack(alignment: .trailing, spacing: 0) {
-                Text(HijriDate.day(hijriDate))
-                    .font(.system(size: 15, weight: .semibold))
-                Text(HijriDate.shortMonth(hijriDate))
-                    .font(.system(size: 13))
-                    .opacity(0.75)
-                Text(String(HijriDate.year(hijriDate)))
-                    .font(.system(size: 13))
-                    .opacity(0.5)
-            }
         }
+        .font(.system(size: 15))
         .foregroundStyle(Palette.ink)
         .lineLimit(1)
     }
