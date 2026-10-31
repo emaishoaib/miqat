@@ -22,7 +22,7 @@ struct NextPrayerRectangularView: View {
                         .fontWeight(.semibold)
                     Text(NextPrayerComplicationView.shortTime(next.begins))
                 }
-                Text(SunPathDial.timeLeft(to: next.begins, from: date))
+                Text(next.begins, style: .relative)
                     .opacity(0.7)
             }
             Spacer(minLength: 0)
