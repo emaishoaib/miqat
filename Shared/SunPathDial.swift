@@ -30,6 +30,7 @@ struct SunPathDial: View {
     @AnimatableIgnored var isCompact = false
     @AnimatableIgnored var showsText = true
     @AnimatableIgnored var weight: CGFloat = 1
+    var countdownVisibility: Double = 1
 
     var body: some View {
         Canvas { context, size in
@@ -99,13 +100,15 @@ struct SunPathDial: View {
             let countdown = context.resolve(Text(Self.countdown(to: next.begins, from: now)).font(isCompact ? .system(size: 28 * scale, weight: .semibold) : .headline).foregroundStyle(countdownColor))
             let gap = isCompact ? Self.compactTextGap * scale : Self.textGap
             context.draw(name, at: CGPoint(x: x, y: horizonY - gap), anchor: .bottom)
-            context.draw(countdown, at: CGPoint(x: x, y: horizonY + gap), anchor: .top)
+            var countdownContext = context
+            countdownContext.opacity = countdownVisibility
+            countdownContext.draw(countdown, at: CGPoint(x: x, y: horizonY + gap), anchor: .top)
 
             if !isCompact {
                 let label = context.resolve(Text(next.prayer == .sunrise ? "Fajr until" : "Next prayer").font(.caption).foregroundStyle(Palette.ink.opacity(0.7)))
                 let time = context.resolve(Text("at \(next.begins.formatted(date: .omitted, time: .shortened))").font(.subheadline).foregroundStyle(Palette.ink.opacity(0.7)))
                 context.draw(label, at: CGPoint(x: x, y: horizonY - gap - name.measure(in: size).height), anchor: .bottom)
-                context.draw(time, at: CGPoint(x: x, y: horizonY + gap + countdown.measure(in: size).height), anchor: .top)
+                context.draw(time, at: CGPoint(x: x, y: horizonY + gap + countdown.measure(in: size).height * countdownVisibility), anchor: .top)
             }
         }
         .aspectRatio(Self.canvas, contentMode: .fit)
