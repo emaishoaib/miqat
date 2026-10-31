@@ -4,7 +4,7 @@ public enum HijriDate {
     private static let calendar = Calendar(identifier: .islamicUmmAlQura)
 
     public static func formatted(_ date: Date, locale: Locale = .current) -> String {
-        date.formatted(Date.FormatStyle(date: .long, time: .omitted, locale: locale, calendar: calendar))
+        "\(day(date, locale: locale)) \(month(date, locale: locale)) \(year(date))"
     }
 
     public static func day(_ date: Date, locale: Locale = .current) -> String {

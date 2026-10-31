@@ -14,7 +14,7 @@ struct NextPrayerRectangularView: View {
             }
             Text(next.begins, style: .relative)
                 .foregroundStyle(.secondary)
-            Text(verbatim: "\(HijriDate.day(hijriDate)) \(HijriDate.month(hijriDate)) \(HijriDate.year(hijriDate))")
+            Text(HijriDate.formatted(hijriDate))
         }
         .font(.body)
         .lineLimit(1)

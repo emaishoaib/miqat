@@ -22,6 +22,10 @@ struct HijriDateTests {
         #expect(HijriDate.year(date) == 1448)
     }
 
+    @Test func formattedReadsDayThenMonthThenYear() {
+        #expect(HijriDate.formatted(date, locale: locale) == "13 Jumada I 1448")
+    }
+
     var utc: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
