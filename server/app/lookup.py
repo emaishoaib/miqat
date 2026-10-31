@@ -70,12 +70,17 @@ def add_unknown_mosques(
 def upcoming_times(
     session: Session, mosque: Mosque, now: datetime.datetime
 ) -> list[PrayerTime]:
-    today = now.astimezone(ZoneInfo(mosque.time_zone)).date()
+    zone = ZoneInfo(mosque.time_zone)
+    today = now.astimezone(zone).date()
     times = session.scalars(
         select(PrayerTime).where(
             PrayerTime.place_id == mosque.place_id, PrayerTime.date >= today
         )
     ).all()
+    if not any(
+        datetime.datetime.combine(time.date, time.begins, zone) > now for time in times
+    ):
+        return []
     return sorted(times, key=lambda time: (time.date, PRAYER_ORDER.index(time.prayer)))
 
 

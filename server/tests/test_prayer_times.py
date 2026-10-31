@@ -169,6 +169,20 @@ def test_skips_mosques_whose_times_are_all_in_the_past(session, client):
     assert response.json()["mosque"]["id"] == "current"
 
 
+def test_skips_a_mosque_once_its_last_prayer_has_passed(session, client):
+    add_mosque(session, "ending", {TODAY: DAY})
+    add_mosque(
+        session, "current", {TODAY: DAY, TODAY + datetime.timedelta(days=1): DAY}
+    )
+    after_isha = datetime.datetime(2027, 6, 1, 22, 0, tzinfo=datetime.UTC)
+
+    response = client(["ending", "current"], now=after_isha).get(
+        "/prayer-times", params=SOLIHULL
+    )
+
+    assert response.json()["mosque"]["id"] == "current"
+
+
 def test_returns_404_when_no_nearby_mosque_has_times_and_there_is_no_city(
     session, client
 ):
