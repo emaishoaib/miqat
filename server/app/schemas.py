@@ -9,6 +9,7 @@ class MosqueOut(BaseModel):
     id: str
     name: str
     address: str
+    website: str | None
     latitude: float
     longitude: float
     distance_meters: float

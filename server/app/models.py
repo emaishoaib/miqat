@@ -29,6 +29,7 @@ class Mosque(Base):
     place_id: Mapped[str] = mapped_column(primary_key=True)
     name: Mapped[str]
     address: Mapped[str]
+    website: Mapped[str | None]
     latitude: Mapped[float]
     longitude: Mapped[float]
     time_zone: Mapped[str]

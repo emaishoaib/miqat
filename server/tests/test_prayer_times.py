@@ -90,11 +90,12 @@ class FakeAlAdhan:
         )
 
 
-def add_mosque(session, place_id, days):
+def add_mosque(session, place_id, days, website=None):
     mosque = Mosque(
         place_id=place_id,
         name=f"Masjid {place_id}",
         address="Solihull",
+        website=website,
         latitude=52.4118,
         longitude=-1.7776,
         time_zone="Europe/London",
@@ -141,6 +142,22 @@ def test_returns_the_nearest_mosque_that_has_times(session, client):
 
     assert response.status_code == 200
     assert response.json()["mosque"]["id"] == "has-times"
+
+
+def test_returns_the_website_of_the_mosque(session, client):
+    add_mosque(session, "masjid", {TODAY: DAY}, website="https://example.org")
+
+    body = client(["masjid"]).get("/prayer-times", params=SOLIHULL).json()
+
+    assert body["mosque"]["website"] == "https://example.org"
+
+
+def test_returns_no_website_when_the_mosque_has_none(session, client):
+    add_mosque(session, "masjid", {TODAY: DAY})
+
+    body = client(["masjid"]).get("/prayer-times", params=SOLIHULL).json()
+
+    assert body["mosque"]["website"] is None
 
 
 def test_skips_mosques_whose_times_are_all_in_the_past(session, client):

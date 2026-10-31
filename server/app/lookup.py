@@ -104,6 +104,7 @@ def timetable_response(
             id=mosque.place_id,
             name=mosque.name,
             address=mosque.address,
+            website=mosque.website,
             latitude=mosque.latitude,
             longitude=mosque.longitude,
             distance_meters=distance_meters(
