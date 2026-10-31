@@ -40,6 +40,7 @@ Only when the user asks for their local server, use `MIQAT_SERVER_URL=http://loc
 | What are its times for a range of days? | `times PLACE_ID --from YYYY-MM-DD --to YYYY-MM-DD` |
 | Which mosques have no times or are running low? | `needing` (or `needing --days N`) |
 | Save times | `upload PLACE_ID FILE.json` (or `-` to read from stdin) |
+| Set a mosque's website | `website PLACE_ID URL` |
 
 Mosques are identified by their Google place ID. Use `search` or `nearby` to find it from a name or location. A mosque can only receive times once it is in the database, which happens when the app looks for mosques near it. `nearby` shows this as `in_database`.
 

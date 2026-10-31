@@ -47,6 +47,10 @@ def build_parser() -> argparse.ArgumentParser:
     upload.add_argument("place_id")
     upload.add_argument("file")
 
+    website = commands.add_parser("website", help="Set a mosque's website.")
+    website.add_argument("place_id")
+    website.add_argument("url")
+
     return parser
 
 
@@ -77,6 +81,11 @@ def request(api: httpx.Client, args: argparse.Namespace) -> httpx.Response:
                 with open(args.file) as file:
                     body = json.load(file)
             return api.put(f"/admin/mosques/{args.place_id}/timetable", json=body)
+        case "website":
+            return api.put(
+                f"/admin/mosques/{args.place_id}/website",
+                json={"website": args.url},
+            )
     raise ValueError(f"Unknown command {args.command}")
 
 

@@ -4,7 +4,7 @@ from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -21,6 +21,7 @@ class MosqueSummary(BaseModel):
     id: str
     name: str
     address: str
+    website: str | None
     latitude: float
     longitude: float
     time_zone: str
@@ -37,6 +38,10 @@ class NearbyMosqueOut(BaseModel):
     distance_meters: float
     in_database: bool
     last_day: datetime.date | None
+
+
+class WebsiteIn(BaseModel):
+    website: HttpUrl
 
 
 def require_admin(
@@ -78,6 +83,7 @@ def summary(session: Session, mosque: Mosque) -> MosqueSummary:
         id=mosque.place_id,
         name=mosque.name,
         address=mosque.address,
+        website=mosque.website,
         latitude=mosque.latitude,
         longitude=mosque.longitude,
         time_zone=mosque.time_zone,
@@ -203,3 +209,17 @@ def upload_timetable(
     save_timetable(session, mosque, as_day_times(timetable))
     session.commit()
     return {"version": timetable_version(mosque), "days_saved": len(timetable.days)}
+
+
+@router.put(
+    "/mosques/{place_id}/website",
+    responses={404: {"description": MOSQUE_NOT_FOUND}},
+)
+def set_website(
+    place_id: str, website: WebsiteIn, session: SessionDependency
+) -> MosqueSummary:
+    mosque = mosque_or_404(session, place_id)
+    mosque.website = str(website.website)
+    mosque.timetable_version += 1
+    session.commit()
+    return summary(session, mosque)

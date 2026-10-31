@@ -53,6 +53,16 @@ def test_reads_times_for_a_range_of_days(server):
     assert dict(requests[0].url.params) == {"from": "2026-11-01", "to": "2026-11-30"}
 
 
+def test_sets_a_mosques_website(server):
+    requests, respond = server
+
+    main(["website", "masjid", "https://example.org/"], transport=respond())
+
+    assert requests[0].method == "PUT"
+    assert requests[0].url.path == "/admin/mosques/masjid/website"
+    assert json.loads(requests[0].content) == {"website": "https://example.org/"}
+
+
 def test_uploads_a_timetable_from_a_file(server, tmp_path):
     requests, respond = server
     timetable = {
