@@ -27,6 +27,10 @@ final class StatusItemController: NSObject {
         content.rootView.onOpenURL = { [weak self] in
             self?.dismiss()
         }
+        content.rootView.onCheckForUpdates = { [weak self] in
+            self?.dismiss()
+            AppUpdater.shared.check()
+        }
         panel.contentViewController = content
         panel.isOpaque = false
         panel.backgroundColor = .clear

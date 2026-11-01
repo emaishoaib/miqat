@@ -22,6 +22,10 @@ struct SettingsButton: View {
 }
 
 struct SettingsView: View {
+    let onCheckForUpdates: () -> Void
+
+    @State private var updater = AppUpdater.shared
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -45,6 +49,8 @@ struct SettingsView: View {
                 }
                 Section {
                     VersionRow()
+                    Button("Check for Updates…", action: onCheckForUpdates)
+                        .disabled(!updater.canCheck)
                 }
             }
             .formStyle(.grouped)

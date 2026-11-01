@@ -19,6 +19,7 @@ struct PopUpContent: View {
 
     let model: TimetableModel
     var onOpenURL: () -> Void = {}
+    var onCheckForUpdates: () -> Void = {}
 
     @State private var settings = SettingsPage.shared
 
@@ -26,7 +27,7 @@ struct PopUpContent: View {
         ZStack {
             TimetableScreen(model: model)
             if settings.isShown {
-                SettingsView()
+                SettingsView(onCheckForUpdates: onCheckForUpdates)
             }
         }
         .frame(width: Self.width, height: Self.height)
