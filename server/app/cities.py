@@ -164,7 +164,7 @@ def get_city_times_before_today(
 
 
 def city_timetable_version(city: City) -> str:
-    return f"{city.place_id}:{city.timetable_version}"
+    return f"{city.place_id}:{city.timetable_version}:back{DAYS_BACK}"
 
 
 def city_timetable_response(city: City, times: list[CityPrayerTime]) -> TimetableOut:

@@ -121,7 +121,7 @@ def has_upcoming_prayer(
 
 
 def timetable_version(mosque: Mosque) -> str:
-    return f"{mosque.place_id}:{mosque.timetable_version}"
+    return f"{mosque.place_id}:{mosque.timetable_version}:back{DAYS_BACK}"
 
 
 def timetable_response(

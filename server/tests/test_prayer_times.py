@@ -196,7 +196,7 @@ def test_keeps_today_from_a_finished_mosque_before_the_next_mosque(session, clie
         .json()
     )
 
-    assert body["version"] == "ending:1+current:1"
+    assert body["version"] == "ending:1:back7+current:1:back7"
     assert [(day["date"], day["mosque"]["id"]) for day in body["days"]] == [
         ("2027-06-01", "ending"),
         ("2027-06-02", "current"),
@@ -214,7 +214,7 @@ def test_keeps_today_from_a_finished_mosque_before_the_city(session, client):
 
     assert body["mosque"] is None
     assert body["city"]["id"] == "place-solihull"
-    assert body["version"] == "ending:1+place-solihull:2"
+    assert body["version"] == "ending:1:back7+place-solihull:2:back7"
     today, tomorrow = body["days"][:2]
     assert today["date"] == "2027-06-01"
     assert today["mosque"]["id"] == "ending"
@@ -235,7 +235,7 @@ def test_ignores_a_finished_mosque_when_nothing_comes_after_today(session, clien
         .json()
     )
 
-    assert body["version"] == "later:1"
+    assert body["version"] == "later:1:back7"
     assert [day["mosque"]["id"] for day in body["days"]] == ["later"]
 
 
@@ -376,7 +376,7 @@ def test_does_not_treat_a_mosque_with_only_past_days_as_finished_today(session, 
 
     body = client(["old", "current"]).get("/prayer-times", params=SOLIHULL).json()
 
-    assert body["version"] == "current:1"
+    assert body["version"] == "current:1:back7"
     assert [day["mosque"]["id"] for day in body["days"]] == ["current", "current"]
 
 
@@ -393,6 +393,18 @@ def test_replies_not_modified_when_the_version_matches(session, client):
     assert response.content == b""
 
 
+def test_sends_the_timetable_to_an_app_holding_a_version_from_before_past_days(
+    session, client
+):
+    add_mosque(session, "masjid", {TODAY: DAY})
+
+    response = client(["masjid"]).get(
+        "/prayer-times", params=SOLIHULL, headers={"If-None-Match": '"masjid:1"'}
+    )
+
+    assert response.status_code == 200
+
+
 def test_sends_the_new_timetable_after_it_changes(session, client):
     mosque = add_mosque(session, "masjid", {TODAY: DAY})
     api = client(["masjid"])
@@ -405,7 +417,7 @@ def test_sends_the_new_timetable_after_it_changes(session, client):
     )
 
     assert response.status_code == 200
-    assert response.json()["version"] == "masjid:2"
+    assert response.json()["version"] == "masjid:2:back7"
     assert response.headers["ETag"] != etag
 
 
@@ -463,7 +475,7 @@ def test_falls_back_to_the_city_times_when_no_mosque_has_times(session, client):
         "method": "Moonsighting Committee Worldwide",
         "asr_school": "Hanafi",
     }
-    assert body["version"] == "place-solihull:2"
+    assert body["version"] == "place-solihull:2:back7"
     assert body["days"][0]["times"][0] == {
         "prayer": "fajr",
         "begins": "2027-05-25T03:00:00+01:00",

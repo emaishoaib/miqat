@@ -60,7 +60,7 @@ def test_saves_the_timetable_and_bumps_the_version(session, client):
     response = upload(client(), days("2026-11-01", "2026-11-02"))
 
     assert response.status_code == 200
-    assert response.json() == {"version": "masjid:1", "days_saved": 2}
+    assert response.json() == {"version": "masjid:1:back7", "days_saved": 2}
     assert len(saved_times(session)) == 12
     assert session.get(Mosque, "masjid").timetable_updated_at is not None
 
