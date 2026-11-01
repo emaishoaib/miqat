@@ -33,7 +33,7 @@ struct SunPathView: View {
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? shownTime, hijriDate: shown?.hijriDate(at: shownTime) ?? shownTime, source: shown?.source ?? response.source, isRefreshing: isRefreshing) {
+                Header(date: shown?.date ?? shownTime, hijriDate: shown?.hijriDate(at: shownTime) ?? shownTime, source: shown?.source ?? response.source, nearbyMosque: response.nearbyMosque, isRefreshing: isRefreshing) {
                     await refreshShowingProgress()
                 }
                 if let path, let next, let today {
@@ -241,12 +241,21 @@ private struct Header: View {
     let date: Date
     let hijriDate: Date
     let source: TimesSource
+    let nearbyMosque: NearbyMosque?
     let isRefreshing: Bool
     let refresh: () async -> Void
 
     @State private var explanation = TimesExplanation.shared
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            dateAndButtons
+            sourceRow
+        }
+    }
+
+    private var dateAndButtons: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -274,22 +283,6 @@ private struct Header: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("About the Hijri date")
-                Button {
-                    explanation.topic = .times
-                    explanation.isShown = true
-                } label: {
-                    HStack(spacing: 6) {
-                        SourceLabel(source: source)
-                        Image(systemName: "info.circle")
-                            .foregroundStyle(Palette.ink.opacity(0.5))
-                    }
-                    .font(.subheadline)
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 6)
-                .sheet(isPresented: $explanation.isShown) {
-                    TimesExplanationView(source: source, topic: explanation.topic, hijriDateHasMovedOn: hijriDate != date)
-                }
             }
             .layoutPriority(1)
             Spacer()
@@ -316,6 +309,40 @@ private struct Header: View {
             }
             .font(.title3)
         }
+    }
+
+    private var sourceRow: some View {
+        HStack {
+            Button {
+                explanation.topic = .times
+                explanation.isShown = true
+            } label: {
+                HStack(spacing: 6) {
+                    SourceLabel(source: source)
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(Palette.ink.opacity(0.5))
+                }
+                .font(.subheadline)
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $explanation.isShown) {
+                TimesExplanationView(source: source, topic: explanation.topic, hijriDateHasMovedOn: hijriDate != date)
+            }
+            #if os(macOS)
+            Spacer()
+            if case .city = source, let nearbyMosque {
+                Button("Check Masjid") {
+                    openURL(nearbyMosque.website)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .pointerStyle(.link)
+                .help(nearbyMosque.name)
+                .accessibilityHint("Opens the website of \(nearbyMosque.name)")
+            }
+            #endif
+        }
+        .padding(.top, 6)
     }
 
     private static var shortDate: Date.VerbatimFormatStyle {
