@@ -23,8 +23,8 @@ struct PrayerTimesWidgetView: View {
                 VStack(spacing: 0) {
                     HijriDateLine(date: listed.hijriDate(at: now))
                     Spacer(minLength: 0)
-                    SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: isDay, launch: 1, ripple: 1, rippleAt: nil, isCompact: true, weight: 1.15, compactTextScale: 1.15)
-                        .frame(width: 96)
+                    SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: isDay, launch: 1, ripple: 1, rippleAt: nil, isCompact: true, weight: 1.15, compactTextScale: 1.15, showsCountdownPrefix: false)
+                        .frame(width: 104)
                         .offset(y: -1)
                     Spacer(minLength: 0)
                     PrayerGrid(day: listed, next: next, now: now)

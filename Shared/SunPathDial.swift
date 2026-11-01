@@ -31,6 +31,7 @@ struct SunPathDial: View {
     @AnimatableIgnored var showsText = true
     @AnimatableIgnored var weight: CGFloat = 1
     @AnimatableIgnored var compactTextScale: CGFloat = 1
+    @AnimatableIgnored var showsCountdownPrefix = true
     var countdownVisibility: Double = 1
 
     var body: some View {
@@ -98,7 +99,8 @@ struct SunPathDial: View {
             let horizonY = Self.center.y * scale
             let name = context.resolve(Text(next.prayer.name).font(isCompact ? .system(size: 32 * compactTextScale * scale, weight: .semibold) : .title.weight(.semibold)).foregroundStyle(Palette.ink))
             let countdownColor = Self.countdownColor(to: next.begins, from: now, usesDayColours: usesDayColours)
-            let countdown = context.resolve(Text(Self.countdown(to: next.begins, from: now)).font(isCompact ? .system(size: 28 * compactTextScale * scale, weight: .semibold) : .headline).foregroundStyle(countdownColor))
+            let countdownText = showsCountdownPrefix ? Self.countdown(to: next.begins, from: now) : Self.timeLeft(to: next.begins, from: now)
+            let countdown = context.resolve(Text(countdownText).font(isCompact ? .system(size: 28 * compactTextScale * scale, weight: .semibold) : .headline).foregroundStyle(countdownColor))
             let gap = isCompact ? Self.compactTextGap * scale : Self.textGap
             context.draw(name, at: CGPoint(x: x, y: horizonY - gap), anchor: .bottom)
             var countdownContext = context
