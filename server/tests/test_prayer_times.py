@@ -483,6 +483,104 @@ def test_falls_back_to_the_city_times_when_no_mosque_has_times(session, client):
     }
 
 
+def test_names_the_nearest_mosque_with_a_website_with_the_city_times(session, client):
+    add_mosque(session, "no-website", {})
+    add_mosque(session, "nearer", {}, website="https://nearer.example")
+    add_mosque(session, "farther", {}, website="https://farther.example")
+
+    body = (
+        client(
+            ["unknown", "no-website", "nearer", "farther"],
+            geocoding=FakeGeocoding(SOLIHULL_CITY),
+        )
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["city"]["id"] == "place-solihull"
+    assert body["nearby_mosque"] == {
+        "name": "Masjid nearer",
+        "website": "https://nearer.example",
+    }
+
+
+def test_names_no_mosque_when_none_near_the_city_times_has_a_website(session, client):
+    add_mosque(session, "no-website", {})
+
+    body = (
+        client(["no-website"], geocoding=FakeGeocoding(SOLIHULL_CITY))
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["nearby_mosque"] is None
+
+
+def test_names_no_nearby_mosque_with_the_times_of_a_mosque(session, client):
+    add_mosque(session, "masjid", {TODAY: DAY}, website="https://masjid.example")
+
+    body = client(["masjid"]).get("/prayer-times", params=SOLIHULL).json()
+
+    assert body["nearby_mosque"] is None
+
+
+def test_keeps_the_nearby_mosque_after_today_from_a_finished_mosque(session, client):
+    add_mosque(session, "ending", {TODAY: DAY}, website="https://ending.example")
+
+    body = (
+        client(["ending"], geocoding=FakeGeocoding(SOLIHULL_CITY), now=AFTER_ISHA)
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["days"][0]["mosque"]["id"] == "ending"
+    assert body["nearby_mosque"]["website"] == "https://ending.example"
+
+
+def test_replies_not_modified_for_city_times_with_a_nearby_mosque(session, client):
+    add_mosque(session, "masjid", {}, website="https://masjid.example")
+    api = client(["masjid"], geocoding=FakeGeocoding(SOLIHULL_CITY))
+    etag = api.get("/prayer-times", params=SOLIHULL).headers["ETag"]
+
+    response = api.get(
+        "/prayer-times", params=SOLIHULL, headers={"If-None-Match": etag}
+    )
+
+    assert response.status_code == 304
+
+
+def test_sends_the_city_times_again_when_a_nearby_mosque_gets_a_website(
+    session, client
+):
+    mosque = add_mosque(session, "masjid", {})
+    api = client(["masjid"], geocoding=FakeGeocoding(SOLIHULL_CITY))
+    etag = api.get("/prayer-times", params=SOLIHULL).headers["ETag"]
+
+    mosque.website = "https://masjid.example"
+    session.commit()
+    response = api.get(
+        "/prayer-times", params=SOLIHULL, headers={"If-None-Match": etag}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["nearby_mosque"]["website"] == "https://masjid.example"
+
+
+def test_sends_the_city_times_again_when_the_website_changes(session, client):
+    mosque = add_mosque(session, "masjid", {}, website="https://old.example")
+    api = client(["masjid"], geocoding=FakeGeocoding(SOLIHULL_CITY))
+    etag = api.get("/prayer-times", params=SOLIHULL).headers["ETag"]
+
+    mosque.website = "https://new.example"
+    session.commit()
+    response = api.get(
+        "/prayer-times", params=SOLIHULL, headers={"If-None-Match": etag}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["nearby_mosque"]["website"] == "https://new.example"
+
+
 def test_prefers_a_mosque_with_times_over_the_city(session, client):
     add_mosque(session, "has-times", {TODAY: DAY})
     aladhan = FakeAlAdhan()

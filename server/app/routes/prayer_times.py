@@ -17,6 +17,8 @@ from app.dependencies import (
 from app.geocoding import GeocodingClient
 from app.lookup import (
     add_unknown_mosques,
+    attach_nearby_mosque,
+    get_nearest_mosque_with_website,
     nearest_with_times,
     prepend_finished_day,
     timetable_response,
@@ -48,9 +50,8 @@ def prayer_times(
     now: Annotated[datetime.datetime, Depends(get_now)],
     if_none_match: Annotated[str | None, Header()] = None,
 ):
-    lookup = nearest_with_times(
-        session, places.nearest_mosques(latitude, longitude), now
-    )
+    nearby = places.nearest_mosques(latitude, longitude)
+    lookup = nearest_with_times(session, nearby, now)
     add_unknown_mosques(session, lookup.unknown, time_zones)
     if lookup.found is not None:
         mosque, times = lookup.found
@@ -63,6 +64,9 @@ def prayer_times(
             raise HTTPException(status_code=404, detail="Unable to get prayer times.")
         city, city_times = found
         timetable = city_timetable_response(city, city_times)
+        nearest_website = get_nearest_mosque_with_website(session, nearby)
+        if nearest_website is not None:
+            timetable = attach_nearby_mosque(timetable, nearest_website)
     if lookup.finished_today is not None:
         mosque, times = lookup.finished_today
         timetable = prepend_finished_day(

@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 import logging
 import math
 from dataclasses import dataclass, field
@@ -11,7 +12,13 @@ from sqlalchemy.orm import Session
 
 from app.models import Mosque, Prayer, PrayerTime
 from app.places import NearbyMosque
-from app.schemas import DayOut, MosqueOut, PrayerTimeOut, TimetableOut
+from app.schemas import (
+    DayOut,
+    MosqueOut,
+    NearbyMosqueOut,
+    PrayerTimeOut,
+    TimetableOut,
+)
 from app.time_zones import TimeZoneClient, TimeZoneLookupError
 
 PRAYER_ORDER = list(Prayer)
@@ -50,6 +57,16 @@ def nearest_with_times(
                 get_times_before_today(session, mosque, now) + times,
             )
     return lookup
+
+
+def get_nearest_mosque_with_website(
+    session: Session, nearby: list[NearbyMosque]
+) -> Mosque | None:
+    for candidate in nearby:
+        mosque = session.get(Mosque, candidate.place_id)
+        if mosque is not None and mosque.website:
+            return mosque
+    return None
 
 
 def add_unknown_mosques(
@@ -172,6 +189,17 @@ def prepend_finished_day(
         update={
             "version": f"{finished.version}+{timetable.version}",
             "days": finished.days + later_days,
+        }
+    )
+
+
+def attach_nearby_mosque(timetable: TimetableOut, mosque: Mosque) -> TimetableOut:
+    details = f"{mosque.name}|{mosque.website}".encode()
+    fingerprint = hashlib.sha256(details).hexdigest()[:8]
+    return timetable.model_copy(
+        update={
+            "version": f"{timetable.version}+nearby:{mosque.place_id}:{fingerprint}",
+            "nearby_mosque": NearbyMosqueOut(name=mosque.name, website=mosque.website),
         }
     )
 

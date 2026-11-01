@@ -15,6 +15,11 @@ class MosqueOut(BaseModel):
     distance_meters: float
 
 
+class NearbyMosqueOut(BaseModel):
+    name: str
+    website: str
+
+
 class CityOut(BaseModel):
     id: str
     name: str
@@ -39,5 +44,6 @@ class TimetableOut(BaseModel):
     version: str
     mosque: MosqueOut | None = None
     city: CityOut | None = None
+    nearby_mosque: NearbyMosqueOut | None = None
     time_zone: str
     days: list[DayOut]
