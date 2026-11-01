@@ -18,6 +18,7 @@ from app.calculation import (
     school_for,
 )
 from app.geocoding import GeocodedCity, GeocodingClient, GeocodingError
+from app.lookup import DAYS_BACK
 from app.models import City, CityPrayerTime, Prayer
 from app.schemas import CityOut, DayOut, PrayerTimeOut, TimetableOut
 from app.time_zones import TimeZoneClient, TimeZoneLookupError
@@ -59,7 +60,9 @@ def city_with_times(
             return None
 
     times = upcoming_city_times(session, city, now)
-    return (city, times) if times else None
+    if not times:
+        return None
+    return city, get_city_times_before_today(session, city, now) + times
 
 
 def add_city(session: Session, found: GeocodedCity, time_zones: TimeZoneClient) -> City:
@@ -145,6 +148,28 @@ def upcoming_city_times(
         )
     ).all()
     return sorted(times, key=lambda time: (time.date, PRAYER_ORDER.index(time.prayer)))
+
+
+def get_city_times_before_today(
+    session: Session, city: City, now: datetime.datetime
+) -> list[CityPrayerTime]:
+    today = now.astimezone(ZoneInfo(city.time_zone)).date()
+    one_day = datetime.timedelta(days=1)
+    times = session.scalars(
+        select(CityPrayerTime).where(
+            CityPrayerTime.place_id == city.place_id,
+            CityPrayerTime.date >= today - DAYS_BACK * one_day,
+            CityPrayerTime.date < today,
+        )
+    ).all()
+    dates = {time.date for time in times}
+    first = today
+    while first - one_day in dates:
+        first -= one_day
+    return sorted(
+        (time for time in times if time.date >= first),
+        key=lambda time: (time.date, PRAYER_ORDER.index(time.prayer)),
+    )
 
 
 def city_timetable_version(city: City) -> str:

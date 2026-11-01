@@ -4,7 +4,7 @@ import datetime
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.aladhan import CalculatedMonth
 from app.calculation import Method, School
@@ -18,7 +18,7 @@ from app.dependencies import (
 )
 from app.main import app
 from app.geocoding import GeocodedCity, GeocodingError
-from app.models import City, Mosque, Prayer
+from app.models import City, CityPrayerTime, Mosque, Prayer
 from app.places import NearbyMosque
 from app.time_zones import TimeZoneLookupError
 from app.timetables import save_timetable
@@ -521,8 +521,51 @@ def test_fetches_next_month_when_the_city_times_run_out_within_a_week(session, c
         (2027, 6),
         (2027, 7),
     ]
-    assert body["days"][0]["date"] == "2027-06-28"
+    assert body["days"][0]["date"] == "2027-06-21"
     assert body["days"][-1]["date"] == "2027-07-31"
+
+
+def test_returns_at_most_seven_stored_days_before_today_for_a_city(session, client):
+    mid_june = datetime.datetime(2027, 6, 15, 9, 0, tzinfo=datetime.UTC)
+
+    body = (
+        client([], geocoding=FakeGeocoding(SOLIHULL_CITY), now=mid_june)
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["days"][0]["date"] == "2027-06-08"
+    assert body["days"][-1]["date"] == "2027-06-30"
+
+
+def test_stops_going_back_at_the_first_missing_day_for_a_city(session, client):
+    mid_june = datetime.datetime(2027, 6, 15, 9, 0, tzinfo=datetime.UTC)
+    api = client([], geocoding=FakeGeocoding(SOLIHULL_CITY), now=mid_june)
+    api.get("/prayer-times", params=SOLIHULL)
+
+    session.execute(
+        delete(CityPrayerTime).where(CityPrayerTime.date == datetime.date(2027, 6, 12))
+    )
+    session.commit()
+    body = api.get("/prayer-times", params=SOLIHULL).json()
+
+    assert body["days"][0]["date"] == "2027-06-13"
+
+
+def test_returns_404_when_a_city_only_has_days_before_today(session, client):
+    client([], geocoding=FakeGeocoding(SOLIHULL_CITY)).get(
+        "/prayer-times", params=SOLIHULL
+    )
+    early_july = datetime.datetime(2027, 7, 3, 9, 0, tzinfo=datetime.UTC)
+
+    response = client(
+        [],
+        geocoding=FakeGeocoding(SOLIHULL_CITY),
+        aladhan=FakeAlAdhan(fails=True),
+        now=early_july,
+    ).get("/prayer-times", params=SOLIHULL)
+
+    assert response.status_code == 404
 
 
 def test_returns_404_when_aladhan_fails_for_a_new_city(session, client):
