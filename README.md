@@ -59,3 +59,51 @@ gcloud builds triggers run deploy-server --region=europe-central2 --branch=main
 ```
 
 Terraform does not track the server's image, so applying it never rolls a deploy back.
+
+# Releasing
+
+There are two separate paths, because the iPhone and Mac apps reach people in different ways.
+
+## iPhone and Watch: beta through TestFlight
+
+TestFlight is Apple's app for installing beta versions.
+
+**Setup**
+
+1. Join the Apple Developer Program
+2. Sign in to your developer account in Xcode
+3. Create Miqat's app record in App Store Connect, Apple's website for managing your apps
+
+**Every beta**
+
+1. Raise the version in `project.yml`, then run `xcodegen generate`
+2. In Xcode, choose the `Miqat-iOS` scheme and **Any iOS Device**, then **Product -> Archive**. This builds the iPhone app with the Watch app inside it
+3. In the window that opens, click **Distribute App -> TestFlight**. Xcode signs and uploads it
+4. Wait for Apple to process the build, and it appears in App Store Connect
+5. Give testers access to the build
+6. Testers install it from the TestFlight app on their iPhone. The Watch app comes with it
+
+## Mac: DMG from any website
+
+**Setup**
+
+1. **Create a Developer ID certificate** -- this shows Macs the app came from you
+2. **Store the notarization login** -- this lets the script send the app to Apple for scanning
+3. **Generate the Sparkle key** -- this proves that updates really came from you
+4. **Get a website address** -- this is where the DMG and update file will live. Set it as `MIQAT_UPDATES_HOST` in `Config/Release.xcconfig`
+
+### Release
+
+1. Raise the version and build number in `project.yml`
+2. Run `scripts/release-mac.sh`. It does all of this for you:
+   - builds and signs the app
+   - puts it in a DMG
+   - gets Apple to scan it
+   - updates `appcast.xml`, the file that tells installed apps what the latest version is
+3. Upload the new DMG and `appcast.xml` from `releases/` to your website
+
+**What people do**
+
+1. They download the DMG from your website
+2. They open it and drag Miqat into Applications
+3. From then on, the app checks `appcast.xml` by itself and offers new versions as you release them. They can also use **Check for Updates…** in settings
