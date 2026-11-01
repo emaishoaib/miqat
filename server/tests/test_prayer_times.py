@@ -284,11 +284,7 @@ def test_returns_404_when_no_nearby_mosque_has_times_and_there_is_no_city(
 
 def test_returns_every_upcoming_day_with_times_in_local_time(session, client):
     tomorrow = TODAY + datetime.timedelta(days=1)
-    add_mosque(
-        session,
-        "masjid",
-        {TODAY - datetime.timedelta(days=1): DAY, TODAY: DAY, tomorrow: DAY},
-    )
+    add_mosque(session, "masjid", {TODAY: DAY, tomorrow: DAY})
 
     body = client(["masjid"]).get("/prayer-times", params=SOLIHULL).json()
 
@@ -302,6 +298,86 @@ def test_returns_every_upcoming_day_with_times_in_local_time(session, client):
     assert [time["prayer"] for time in body["days"][0]["times"]] == [
         prayer.value for prayer in Prayer
     ]
+
+
+def test_returns_the_days_before_today_first(session, client):
+    add_mosque(
+        session,
+        "masjid",
+        {
+            TODAY - datetime.timedelta(days=2): DAY,
+            TODAY - datetime.timedelta(days=1): DAY,
+            TODAY: DAY,
+        },
+    )
+
+    body = client(["masjid"]).get("/prayer-times", params=SOLIHULL).json()
+
+    assert [day["date"] for day in body["days"]] == [
+        "2027-05-30",
+        "2027-05-31",
+        "2027-06-01",
+    ]
+
+
+def test_returns_at_most_seven_days_before_today(session, client):
+    add_mosque(
+        session,
+        "masjid",
+        {TODAY - datetime.timedelta(days=offset): DAY for offset in range(9)},
+    )
+
+    body = client(["masjid"]).get("/prayer-times", params=SOLIHULL).json()
+
+    assert len(body["days"]) == 8
+    assert body["days"][0]["date"] == "2027-05-25"
+
+
+def test_stops_going_back_at_the_first_missing_day(session, client):
+    add_mosque(
+        session,
+        "masjid",
+        {
+            TODAY - datetime.timedelta(days=3): DAY,
+            TODAY - datetime.timedelta(days=1): DAY,
+            TODAY: DAY,
+        },
+    )
+
+    body = client(["masjid"]).get("/prayer-times", params=SOLIHULL).json()
+
+    assert [day["date"] for day in body["days"]] == ["2027-05-31", "2027-06-01"]
+
+
+def test_keeps_the_days_before_today_from_a_finished_mosque(session, client):
+    add_mosque(session, "ending", {TODAY - datetime.timedelta(days=1): DAY, TODAY: DAY})
+    add_mosque(
+        session, "current", {TODAY: DAY, TODAY + datetime.timedelta(days=1): DAY}
+    )
+
+    body = (
+        client(["ending", "current"], now=AFTER_ISHA)
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert [(day["date"], day["mosque"]["id"]) for day in body["days"]] == [
+        ("2027-05-31", "ending"),
+        ("2027-06-01", "ending"),
+        ("2027-06-02", "current"),
+    ]
+
+
+def test_does_not_treat_a_mosque_with_only_past_days_as_finished_today(session, client):
+    add_mosque(session, "old", {TODAY - datetime.timedelta(days=1): DAY})
+    add_mosque(
+        session, "current", {TODAY: DAY, TODAY + datetime.timedelta(days=1): DAY}
+    )
+
+    body = client(["old", "current"]).get("/prayer-times", params=SOLIHULL).json()
+
+    assert body["version"] == "current:1"
+    assert [day["mosque"]["id"] for day in body["days"]] == ["current", "current"]
 
 
 def test_replies_not_modified_when_the_version_matches(session, client):

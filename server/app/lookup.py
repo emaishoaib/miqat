@@ -16,6 +16,7 @@ from app.time_zones import TimeZoneClient, TimeZoneLookupError
 
 PRAYER_ORDER = list(Prayer)
 EARTH_RADIUS_METERS = 6_371_000
+DAYS_BACK = 7
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +39,16 @@ def nearest_with_times(
             continue
         times = times_from_today(session, mosque, now)
         if has_upcoming_prayer(mosque, times, now):
-            lookup.found = (mosque, times)
+            lookup.found = (
+                mosque,
+                get_times_before_today(session, mosque, now) + times,
+            )
             return lookup
         if times and lookup.finished_today is None:
-            lookup.finished_today = (mosque, times)
+            lookup.finished_today = (
+                mosque,
+                get_times_before_today(session, mosque, now) + times,
+            )
     return lookup
 
 
@@ -80,6 +87,28 @@ def times_from_today(
         )
     ).all()
     return sorted(times, key=lambda time: (time.date, PRAYER_ORDER.index(time.prayer)))
+
+
+def get_times_before_today(
+    session: Session, mosque: Mosque, now: datetime.datetime
+) -> list[PrayerTime]:
+    today = now.astimezone(ZoneInfo(mosque.time_zone)).date()
+    one_day = datetime.timedelta(days=1)
+    times = session.scalars(
+        select(PrayerTime).where(
+            PrayerTime.place_id == mosque.place_id,
+            PrayerTime.date >= today - DAYS_BACK * one_day,
+            PrayerTime.date < today,
+        )
+    ).all()
+    dates = {time.date for time in times}
+    first = today
+    while first - one_day in dates:
+        first -= one_day
+    return sorted(
+        (time for time in times if time.date >= first),
+        key=lambda time: (time.date, PRAYER_ORDER.index(time.prayer)),
+    )
 
 
 def has_upcoming_prayer(
