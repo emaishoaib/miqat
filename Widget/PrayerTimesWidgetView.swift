@@ -25,7 +25,6 @@ struct PrayerTimesWidgetView: View {
                     Spacer(minLength: 0)
                     SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: isDay, launch: 1, ripple: 1, rippleAt: nil, isCompact: true, weight: 1.15, compactTextScale: 1.15)
                         .frame(width: 96)
-                        .offset(y: 1)
                     Spacer(minLength: 0)
                     PrayerGrid(day: listed, next: next, now: now)
                 }
