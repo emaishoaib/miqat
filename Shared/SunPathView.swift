@@ -245,7 +245,6 @@ private struct Header: View {
     let refresh: () async -> Void
 
     @State private var explanation = TimesExplanation.shared
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         HStack(alignment: .top) {
@@ -275,13 +274,22 @@ private struct Header: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("About the Hijri date")
-                sourceRow
-                    .font(.subheadline)
-                    .buttonStyle(.plain)
-                    .padding(.top, 6)
-                    .sheet(isPresented: $explanation.isShown) {
-                        TimesExplanationView(source: source, topic: explanation.topic, hijriDateHasMovedOn: hijriDate != date)
+                Button {
+                    explanation.topic = .times
+                    explanation.isShown = true
+                } label: {
+                    HStack(spacing: 6) {
+                        SourceLabel(source: source)
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(Palette.ink.opacity(0.5))
                     }
+                    .font(.subheadline)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 6)
+                .sheet(isPresented: $explanation.isShown) {
+                    TimesExplanationView(source: source, topic: explanation.topic, hijriDateHasMovedOn: hijriDate != date)
+                }
             }
             .layoutPriority(1)
             Spacer()
@@ -308,53 +316,6 @@ private struct Header: View {
             }
             .font(.title3)
         }
-    }
-
-    @ViewBuilder
-    private var sourceRow: some View {
-        if let website {
-            HStack(spacing: 6) {
-                Button {
-                    openURL(website)
-                } label: {
-                    SourceLabel(source: source)
-                }
-                #if os(macOS)
-                .pointerStyle(.link)
-                #endif
-                .accessibilityHint("Opens the mosque's website")
-                Button(action: showTimesExplanation) {
-                    infoIcon
-                }
-                .accessibilityLabel("About these times")
-            }
-        } else {
-            Button(action: showTimesExplanation) {
-                HStack(spacing: 6) {
-                    SourceLabel(source: source)
-                    infoIcon
-                }
-            }
-        }
-    }
-
-    private var infoIcon: some View {
-        Image(systemName: "info.circle")
-            .foregroundStyle(Palette.ink.opacity(0.5))
-    }
-
-    private var website: URL? {
-        #if os(macOS)
-        if case .mosque(let mosque, _) = source {
-            return mosque.website
-        }
-        #endif
-        return nil
-    }
-
-    private func showTimesExplanation() {
-        explanation.topic = .times
-        explanation.isShown = true
     }
 
     private static var shortDate: Date.VerbatimFormatStyle {
