@@ -17,3 +17,4 @@ infra/backend.hcl
 *.tfvars
 crash.log
 Config/Release.xcconfig
+releases/
