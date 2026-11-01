@@ -214,7 +214,7 @@ def test_keeps_today_from_a_finished_mosque_before_the_city(session, client):
 
     assert body["mosque"] is None
     assert body["city"]["id"] == "place-solihull"
-    assert body["version"] == "ending:1+place-solihull:1"
+    assert body["version"] == "ending:1+place-solihull:2"
     today, tomorrow = body["days"][:2]
     assert today["date"] == "2027-06-01"
     assert today["mosque"]["id"] == "ending"
@@ -463,10 +463,10 @@ def test_falls_back_to_the_city_times_when_no_mosque_has_times(session, client):
         "method": "Moonsighting Committee Worldwide",
         "asr_school": "Hanafi",
     }
-    assert body["version"] == "place-solihull:1"
+    assert body["version"] == "place-solihull:2"
     assert body["days"][0]["times"][0] == {
         "prayer": "fajr",
-        "begins": "2027-06-01T03:00:00+01:00",
+        "begins": "2027-05-25T03:00:00+01:00",
         "jamaat": None,
     }
 
@@ -490,7 +490,10 @@ def test_calculates_city_times_with_the_country_method_and_school(session, clien
         "/prayer-times", params=SOLIHULL
     )
 
-    assert aladhan.requests == [(2027, 6, Method.MOONSIGHTING_COMMITTEE, School.HANAFI)]
+    assert aladhan.requests == [
+        (2027, 5, Method.MOONSIGHTING_COMMITTEE, School.HANAFI),
+        (2027, 6, Method.MOONSIGHTING_COMMITTEE, School.HANAFI),
+    ]
     city = session.get(City, "place-solihull")
     assert city.time_zone == "Europe/London"
 
@@ -500,9 +503,10 @@ def test_reuses_stored_city_times_instead_of_asking_aladhan_again(session, clien
     api = client([], geocoding=FakeGeocoding(SOLIHULL_CITY), aladhan=aladhan)
 
     api.get("/prayer-times", params=SOLIHULL)
+    requests_for_the_first_lookup = len(aladhan.requests)
     api.get("/prayer-times", params=SOLIHULL)
 
-    assert len(aladhan.requests) == 1
+    assert len(aladhan.requests) == requests_for_the_first_lookup
 
 
 def test_fetches_next_month_when_the_city_times_run_out_within_a_week(session, client):
@@ -525,6 +529,40 @@ def test_fetches_next_month_when_the_city_times_run_out_within_a_week(session, c
     assert body["days"][-1]["date"] == "2027-07-31"
 
 
+def test_fetches_last_month_when_the_week_before_today_starts_in_it(session, client):
+    aladhan = FakeAlAdhan()
+
+    body = (
+        client([], geocoding=FakeGeocoding(SOLIHULL_CITY), aladhan=aladhan)
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert [(year, month) for year, month, _, _ in aladhan.requests] == [
+        (2027, 5),
+        (2027, 6),
+    ]
+    assert body["days"][0]["date"] == "2027-05-25"
+    assert body["days"][-1]["date"] == "2027-06-30"
+
+
+def test_fetches_only_the_month_a_stored_city_is_missing(session, client):
+    mid_june = datetime.datetime(2027, 6, 15, 9, 0, tzinfo=datetime.UTC)
+    client([], geocoding=FakeGeocoding(SOLIHULL_CITY), now=mid_june).get(
+        "/prayer-times", params=SOLIHULL
+    )
+    aladhan = FakeAlAdhan()
+
+    client(
+        [],
+        geocoding=FakeGeocoding(SOLIHULL_CITY),
+        aladhan=aladhan,
+        now=datetime.datetime(2027, 6, 2, 9, 0, tzinfo=datetime.UTC),
+    ).get("/prayer-times", params=SOLIHULL)
+
+    assert [(year, month) for year, month, _, _ in aladhan.requests] == [(2027, 5)]
+
+
 def test_returns_at_most_seven_stored_days_before_today_for_a_city(session, client):
     mid_june = datetime.datetime(2027, 6, 15, 9, 0, tzinfo=datetime.UTC)
 
@@ -540,6 +578,30 @@ def test_returns_at_most_seven_stored_days_before_today_for_a_city(session, clie
 
 def test_stops_going_back_at_the_first_missing_day_for_a_city(session, client):
     mid_june = datetime.datetime(2027, 6, 15, 9, 0, tzinfo=datetime.UTC)
+    client([], geocoding=FakeGeocoding(SOLIHULL_CITY), now=mid_june).get(
+        "/prayer-times", params=SOLIHULL
+    )
+
+    session.execute(
+        delete(CityPrayerTime).where(CityPrayerTime.date == datetime.date(2027, 6, 12))
+    )
+    session.commit()
+    body = (
+        client(
+            [],
+            geocoding=FakeGeocoding(SOLIHULL_CITY),
+            aladhan=FakeAlAdhan(fails=True),
+            now=mid_june,
+        )
+        .get("/prayer-times", params=SOLIHULL)
+        .json()
+    )
+
+    assert body["days"][0]["date"] == "2027-06-13"
+
+
+def test_fills_a_missing_day_before_today_for_a_stored_city(session, client):
+    mid_june = datetime.datetime(2027, 6, 15, 9, 0, tzinfo=datetime.UTC)
     api = client([], geocoding=FakeGeocoding(SOLIHULL_CITY), now=mid_june)
     api.get("/prayer-times", params=SOLIHULL)
 
@@ -549,7 +611,7 @@ def test_stops_going_back_at_the_first_missing_day_for_a_city(session, client):
     session.commit()
     body = api.get("/prayer-times", params=SOLIHULL).json()
 
-    assert body["days"][0]["date"] == "2027-06-13"
+    assert body["days"][0]["date"] == "2027-06-08"
 
 
 def test_returns_404_when_a_city_only_has_days_before_today(session, client):

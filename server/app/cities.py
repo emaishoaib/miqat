@@ -1,10 +1,9 @@
 import datetime
 import logging
-from collections.abc import Iterator
 from zoneinfo import ZoneInfo
 
 import httpx
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -84,20 +83,21 @@ def add_missing_days(
     session: Session, city: City, aladhan: AlAdhanClient, now: datetime.datetime
 ) -> None:
     today = now.astimezone(ZoneInfo(city.time_zone)).date()
-    last_needed = today + datetime.timedelta(days=DAYS_AHEAD - 1)
-    last_stored = session.scalar(
-        select(func.max(CityPrayerTime.date)).where(
-            CityPrayerTime.place_id == city.place_id
+    one_day = datetime.timedelta(days=1)
+    first_needed = today - DAYS_BACK * one_day
+    stored = set(
+        session.scalars(
+            select(CityPrayerTime.date).where(
+                CityPrayerTime.place_id == city.place_id,
+                CityPrayerTime.date >= first_needed,
+            )
         )
     )
-    if last_stored is not None and last_stored >= last_needed:
-        return
-    first_missing = (
-        today
-        if last_stored is None or last_stored < today
-        else last_stored + datetime.timedelta(days=1)
-    )
-    for year, month in months_between(first_missing, last_needed):
+    needed = [
+        first_needed + offset * one_day for offset in range(DAYS_BACK + DAYS_AHEAD)
+    ]
+    missing_months = {(day.year, day.month) for day in needed if day not in stored}
+    for year, month in sorted(missing_months):
         save_city_month(
             session,
             city,
@@ -110,15 +110,6 @@ def add_missing_days(
                 School(city.school),
             ),
         )
-
-
-def months_between(
-    first: datetime.date, last: datetime.date
-) -> Iterator[tuple[int, int]]:
-    year, month = first.year, first.month
-    while (year, month) <= (last.year, last.month):
-        yield year, month
-        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
 
 
 def save_city_month(session: Session, city: City, month: CalculatedMonth) -> None:
