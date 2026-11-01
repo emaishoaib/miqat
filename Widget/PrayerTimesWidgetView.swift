@@ -20,17 +20,17 @@ struct PrayerTimesWidgetView: View {
                let next = response.nextPrayer(after: now),
                let today = response.day(containing: now) {
                 let listed = response.day(containing: next.begins) ?? today
-                ZStack(alignment: .top) {
-                    VStack(spacing: 2) {
-                        Spacer(minLength: 0)
-                        SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: isDay, launch: 1, ripple: 1, rippleAt: nil, isCompact: true)
-                            .frame(width: 118)
-                        PrayerGrid(day: listed, next: next, now: now)
-                    }
-                    HijriDateCorners(date: listed.hijriDate(at: now))
+                VStack(spacing: 0) {
+                    HijriDateLine(date: listed.hijriDate(at: now))
+                    Spacer(minLength: 0)
+                    SunPathDial(day: today, path: path, next: next, now: now, usesDayColours: isDay, launch: 1, ripple: 1, rippleAt: nil, isCompact: true, weight: 1.15, compactTextScale: 1.15)
+                        .frame(width: 96)
+                        .offset(y: 1)
+                    Spacer(minLength: 0)
+                    PrayerGrid(day: listed, next: next, now: now)
                 }
                 .padding(.horizontal, 12)
-                .padding(.top, 9)
+                .padding(.top, 6)
                 .padding(.bottom, 8)
             } else {
                 Text("Open Miqat to load prayer times")
@@ -46,30 +46,19 @@ struct PrayerTimesWidgetView: View {
     }
 }
 
-private struct HijriDateCorners: View {
+private struct HijriDateLine: View {
     let date: Date
 
     var body: some View {
-        HStack(alignment: .top) {
-            Text(HijriDate.day(date))
-                .font(.system(size: 24, weight: .semibold))
-                .alignmentGuide(.top) { $0[.firstTextBaseline] - Self.capHeight(size: 24, weight: .semibold) }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 0) {
-                Text(HijriDate.shortMonth(date))
-                    .opacity(0.75)
-                Text(String(HijriDate.year(date)))
-                    .opacity(0.5)
-            }
-            .font(.system(size: 11))
-            .alignmentGuide(.top) { $0[.firstTextBaseline] - Self.capHeight(size: 11, weight: .regular) }
+        HStack(spacing: 4) {
+            Text("\(HijriDate.day(date)) \(HijriDate.month(date))")
+                .fontWeight(.medium)
+            Text(String(HijriDate.year(date)))
+                .opacity(0.5)
         }
+        .font(.system(size: 12))
         .lineLimit(1)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private static func capHeight(size: CGFloat, weight: UIFont.Weight) -> CGFloat {
-        UIFont.systemFont(ofSize: size, weight: weight).capHeight
+        .minimumScaleFactor(0.8)
     }
 }
 
