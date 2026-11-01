@@ -141,7 +141,7 @@ struct SunPathView: View {
             draggedTime = nil
             return
         }
-        spin = SunSpin(from: draggedTime, begins: .now)
+        spin = SunSpin(from: SunSpin.start(from: draggedTime, returningTo: now), begins: .now)
     }
 
     private func step(byDays days: Int) {
@@ -161,15 +161,20 @@ struct SunPathView: View {
 private struct SunSpin {
     private static let secondsPerLoop: TimeInterval = 0.7
     private static let shortest: TimeInterval = 0.4
-    private static let longest: TimeInterval = 3
     private static let day: TimeInterval = 24 * 60 * 60
 
     let from: Date
     let begins: Date
 
+    static func start(from dragged: Date, returningTo now: Date) -> Date {
+        let days = Calendar.current.dateComponents([.day], from: dragged, to: now).day ?? 0
+        guard abs(days) > 1 else { return dragged }
+        return Calendar.current.date(byAdding: .day, value: days - days.signum(), to: dragged) ?? dragged
+    }
+
     func time(at frame: Date, returningTo now: Date) -> Date? {
         let distance = now.timeIntervalSince(from)
-        let duration = min(max(abs(distance) / Self.day * Self.secondsPerLoop, Self.shortest), Self.longest)
+        let duration = max(abs(distance) / Self.day * Self.secondsPerLoop, Self.shortest)
         let progress = max(frame.timeIntervalSince(begins) / duration, 0)
         guard progress < 1 else { return nil }
         return from.addingTimeInterval(distance * UnitCurve.easeInOut.value(at: progress))
