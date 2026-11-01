@@ -2,6 +2,14 @@ import PrayerKit
 import SwiftUI
 
 struct SourceLabel: View {
+    #if os(macOS)
+    private static let mosqueIconLift: CGFloat = 1
+    private static let cityIconLift: CGFloat = 0.73
+    #else
+    private static let mosqueIconLift: CGFloat = 1.03
+    private static let cityIconLift: CGFloat = 0.76
+    #endif
+
     let source: TimesSource
 
     @ScaledMetric(relativeTo: .subheadline) private var iconSize: CGFloat = 16
@@ -14,14 +22,14 @@ struct SourceLabel: View {
                 Text("\(mosque.name) · \(measurement.formatted(.measurement(width: .abbreviated, usage: .road)))")
             } icon: {
                 icon(named: "MosqueIcon")
-                    .offset(y: -1.55)
+                    .offset(y: -Self.mosqueIconLift)
             }
         case .city(let name, _, _):
             Label {
                 Text(name)
             } icon: {
                 icon(named: "CityIcon")
-                    .offset(y: -0.5)
+                    .offset(y: -Self.cityIconLift)
             }
         }
     }
