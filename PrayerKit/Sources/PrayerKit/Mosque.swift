@@ -15,3 +15,13 @@ public struct Mosque: Codable, Hashable, Identifiable, Sendable {
         self.coordinate = coordinate
     }
 }
+
+public struct NearbyMosque: Codable, Hashable, Sendable {
+    public let name: String
+    public let website: URL
+
+    public init(name: String, website: URL) {
+        self.name = name
+        self.website = website
+    }
+}

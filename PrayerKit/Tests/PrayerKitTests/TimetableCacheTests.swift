@@ -46,6 +46,24 @@ struct TimetableCacheTests {
         #expect(day.source == nil)
     }
 
+    @Test func readsATimetableSavedBeforeItHadANearbyMosque() throws {
+        let saved = Data(#"{"source":{"city":{"name":"Solihull"}},"days":[]}"#.utf8)
+
+        let response = try JSONDecoder().decode(PrayerTimesResponse.self, from: saved)
+
+        #expect(response.nearbyMosque == nil)
+    }
+
+    @Test func keepsTheNearbyMosqueWhenSaved() {
+        let cache = TimetableCache(suiteName: suiteName)
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let nearby = NearbyMosque(name: "Masjid Solihull", website: URL(string: "https://example.org/")!)
+
+        cache.save(PrayerTimesResponse(source: .city(name: "Solihull"), days: [], nearbyMosque: nearby))
+
+        #expect(cache.load()?.nearbyMosque == nearby)
+    }
+
     @Test func returnsTheLastSavedCoordinate() {
         let cache = TimetableCache(suiteName: suiteName)
         defer { UserDefaults().removePersistentDomain(forName: suiteName) }

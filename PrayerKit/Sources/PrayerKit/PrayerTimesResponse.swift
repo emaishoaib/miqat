@@ -4,11 +4,13 @@ public struct PrayerTimesResponse: Codable, Hashable, Sendable {
     public let source: TimesSource
     public let days: [PrayerDay]
     public let version: String?
+    public let nearbyMosque: NearbyMosque?
 
-    public init(source: TimesSource, days: [PrayerDay], version: String? = nil) {
+    public init(source: TimesSource, days: [PrayerDay], version: String? = nil, nearbyMosque: NearbyMosque? = nil) {
         self.source = source
         self.days = days
         self.version = version
+        self.nearbyMosque = nearbyMosque
     }
 
     public func day(containing date: Date, calendar: Calendar = .current) -> PrayerDay? {

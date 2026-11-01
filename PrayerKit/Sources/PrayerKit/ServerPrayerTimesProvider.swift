@@ -75,6 +75,11 @@ private struct ServerTimetable: Decodable {
         let asrSchool: String?
     }
 
+    struct NearbyMosque: Decodable {
+        let name: String
+        let website: URL
+    }
+
     struct Day: Decodable {
         let date: String
         let mosque: Mosque?
@@ -91,6 +96,7 @@ private struct ServerTimetable: Decodable {
     let version: String
     let mosque: Mosque?
     let city: City?
+    let nearbyMosque: NearbyMosque?
     let timeZone: String
     let days: [Day]
 
@@ -112,7 +118,12 @@ private struct ServerTimetable: Decodable {
                 source: Self.source(mosque: day.mosque, city: day.city)
             )
         }
-        return PrayerTimesResponse(source: source, days: prayerDays, version: version)
+        return PrayerTimesResponse(
+            source: source,
+            days: prayerDays,
+            version: version,
+            nearbyMosque: nearbyMosque.map { PrayerKit.NearbyMosque(name: $0.name, website: $0.website) }
+        )
     }
 
     private static func source(mosque: Mosque?, city: City?) -> TimesSource? {

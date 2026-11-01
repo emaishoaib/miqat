@@ -134,6 +134,29 @@ struct ServerPrayerTimesProviderTests {
         #expect(response.source == .city(name: "Solihull", method: "Moonsighting Committee Worldwide", asrSchool: "Hanafi"))
     }
 
+    @Test func readsTheNearbyMosqueWithTheCityTimes() throws {
+        let cityBody = Data("""
+        {
+          "version": "place-solihull:1+nearby:masjid:abc",
+          "mosque": null,
+          "city": {"id": "place-solihull", "name": "Solihull"},
+          "nearby_mosque": {"name": "Masjid Solihull", "website": "https://example.org/"},
+          "time_zone": "Europe/London",
+          "days": []
+        }
+        """.utf8)
+
+        let response = try #require(try ServerPrayerTimesProvider.response(from: cityBody, statusCode: 200))
+
+        #expect(response.nearbyMosque == NearbyMosque(name: "Masjid Solihull", website: URL(string: "https://example.org/")!))
+    }
+
+    @Test func readsATimetableWithoutANearbyMosque() throws {
+        let response = try #require(try ServerPrayerTimesProvider.response(from: body, statusCode: 200))
+
+        #expect(response.nearbyMosque == nil)
+    }
+
     @Test func readsTheSourceOfEachDay() throws {
         let mixedBody = Data("""
         {
