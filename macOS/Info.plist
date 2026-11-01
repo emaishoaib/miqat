@@ -20,5 +20,11 @@
 	<string>1</string>
 	<key>MiqatServerURL</key>
 	<string>$(MIQAT_SERVER_SCHEME)://$(MIQAT_SERVER_HOST)</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://$(MIQAT_UPDATES_HOST)/miqat/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(MIQAT_SPARKLE_PUBLIC_KEY)</string>
 </dict>
 </plist>
