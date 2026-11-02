@@ -4,6 +4,7 @@ import SwiftUI
 struct SunPathView: View {
     private static let margin: CGFloat = 20
     private static let longestDragStep: TimeInterval = 6 * 60 * 60
+    private static let magnetReach: Double = 10
 
     let response: PrayerTimesResponse
     let now: Date
@@ -130,10 +131,18 @@ struct SunPathView: View {
 
     private func drag(toAngle angle: Double) {
         guard let path = response.sunPath(on: shownTime) else { return }
-        let time = response.closestCoveredTime(to: path.date(at: angle, closestTo: shownTime))
+        let time = response.closestCoveredTime(to: path.date(at: magnetised(angle, on: path), closestTo: shownTime))
         guard abs(time.timeIntervalSince(shownTime)) < Self.longestDragStep else { return }
         spin = nil
         draggedTime = time
+    }
+
+    private func magnetised(_ angle: Double, on path: SunPath) -> Double {
+        let offsets = (response.day(containing: shownTime)?.times ?? [])
+            .filter { abs(path.date(at: path.angle(at: $0.begins), closestTo: shownTime).timeIntervalSince($0.begins)) < 1 }
+            .map { SunPathDial.wrapped(angle - path.angle(at: $0.begins)) }
+        guard let offset = offsets.min(by: { abs($0) < abs($1) }), abs(offset) < Self.magnetReach else { return angle }
+        return SunPathDial.wrapped(angle - offset + offset * pow(abs(offset) / Self.magnetReach, 2))
     }
 
     private func spinBack() {
@@ -220,7 +229,7 @@ private struct SunHandle: View {
                             let finger = SunPathDial.angle(of: drag.location, scale: scale)
                             let offset = grabOffset ?? angle - finger
                             grabOffset = offset
-                            onDrag(Self.wrapped(finger + offset))
+                            onDrag(SunPathDial.wrapped(finger + offset))
                         }
                         .onEnded { _ in
                             grabOffset = nil
@@ -229,11 +238,6 @@ private struct SunHandle: View {
                 )
         }
         .coordinateSpace(.named(Self.space))
-    }
-
-    private static func wrapped(_ angle: Double) -> Double {
-        let degrees = (angle + 180).truncatingRemainder(dividingBy: 360)
-        return (degrees <= 0 ? degrees + 360 : degrees) - 180
     }
 }
 

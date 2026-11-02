@@ -126,6 +126,11 @@ struct SunPathDial: View {
         atan2(center.y * scale - location.y, location.x - center.x * scale) * 180 / .pi
     }
 
+    static func wrapped(_ angle: Double) -> Double {
+        let degrees = (angle + 180).truncatingRemainder(dividingBy: 360)
+        return (degrees <= 0 ? degrees + 360 : degrees) - 180
+    }
+
     private static func travel(from start: Double, to end: Double) -> Double {
         let degrees = (start - end).truncatingRemainder(dividingBy: 360)
         return degrees < 0 ? degrees + 360 : degrees
