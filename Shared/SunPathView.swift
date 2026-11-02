@@ -38,7 +38,7 @@ struct SunPathView: View {
                 }
                 if let path, let next, let today {
                     KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
-                        SunPathDial(day: today, path: path, next: next, now: shownTime, usesDayColours: usesDayColours(on: path), launch: launch, ripple: ripple, rippleAt: rippleAt, countdownVisibility: draggedTime == nil ? 1 : 0)
+                        SunPathDial(day: today, path: path, next: next, now: shownTime, usesDayColours: usesDayColours(on: path), launch: launch, ripple: ripple, rippleAt: rippleAt, countdownVisibility: draggedTime == nil ? 1 : 0, dragProgress: draggedTime == nil ? 0 : 1)
                             .animation(.easeInOut(duration: 0.3), value: draggedTime == nil)
                     } keyframes: { _ in
                         MoveKeyframe(0)

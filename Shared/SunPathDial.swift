@@ -33,6 +33,7 @@ struct SunPathDial: View {
     @AnimatableIgnored var compactTextScale: CGFloat = 1
     @AnimatableIgnored var showsCountdownPrefix = true
     var countdownVisibility: Double = 1
+    var dragProgress: Double = 0
 
     var body: some View {
         Canvas { context, size in
@@ -41,21 +42,21 @@ struct SunPathDial: View {
             context.stroke(
                 Path(ellipseIn: circle(around: Self.center, radius: Self.radius, scale: scale)),
                 with: .color(Palette.ink.opacity(0.5)),
-                style: StrokeStyle(lineWidth: 2 * weight * scale, dash: [3 * weight * scale, 6 * weight * scale])
+                style: StrokeStyle(lineWidth: 2 * weight * scale, dash: [(3 + 6 * dragProgress) * weight * scale, 6 * (1 - dragProgress) * weight * scale])
             )
 
             let sunAngle = path.angle(at: now)
             let sunGrowth = Self.ease(Self.phase(of: launch, from: 0, to: 0.35))
             let arcGrowth = Self.ease(Self.phase(of: launch, from: 0.3, to: 0.85))
-            let ringGrowth = Self.overshoot(Self.phase(of: launch, from: 0.82, to: 1))
+            let ringGrowth = Self.overshoot(Self.phase(of: launch, from: 0.82, to: 1)) * (1 - dragProgress)
 
-            if arcGrowth > 0 {
+            if arcGrowth > 0, dragProgress < 1 {
                 var remaining = Path()
                 remaining.addArc(
                     center: CGPoint(x: Self.center.x * scale, y: Self.center.y * scale),
                     radius: Self.radius * scale,
                     startAngle: .degrees(-sunAngle),
-                    endAngle: .degrees(-sunAngle + Self.travel(from: sunAngle, to: path.angle(at: next.begins)) * arcGrowth),
+                    endAngle: .degrees(-sunAngle + Self.travel(from: sunAngle, to: path.angle(at: next.begins)) * arcGrowth * (1 - dragProgress)),
                     clockwise: false
                 )
                 context.stroke(remaining, with: .color(Palette.gold), style: StrokeStyle(lineWidth: 3 * weight * scale, lineCap: .round))
@@ -67,15 +68,14 @@ struct SunPathDial: View {
             context.stroke(horizon, with: .color(Palette.ink), style: StrokeStyle(lineWidth: 3 * weight * scale, lineCap: .round))
 
             for time in day.times.map({ $0.prayer == next.prayer ? next : $0 }) {
-                let dot = circle(around: Self.point(at: path.angle(at: time.begins)), radius: 5 * weight, scale: scale)
-                context.fill(Path(ellipseIn: dot), with: .color(Palette.ink.opacity(time.begins <= now ? 0.4 : 1)))
+                context.fill(marker(at: path.angle(at: time.begins), scale: scale), with: .color(Palette.ink.opacity(time.begins <= now ? 0.4 : 1)))
             }
 
             if ringGrowth > 0 {
                 context.stroke(
                     Path(ellipseIn: circle(around: Self.point(at: path.angle(at: next.begins)), radius: 10 * weight * ringGrowth, scale: scale)),
                     with: .color(Palette.gold),
-                    lineWidth: 2 * weight * scale
+                    lineWidth: 2 * weight * scale * (1 - dragProgress)
                 )
             }
 
@@ -142,6 +142,16 @@ struct SunPathDial: View {
     private static func overshoot(_ t: Double) -> Double {
         let back = 1.70158
         return t == 0 ? 0 : 1 + (back + 1) * pow(t - 1, 3) + back * pow(t - 1, 2)
+    }
+
+    private func marker(at angle: Double, scale: CGFloat) -> Path {
+        let length = (10 + 6 * dragProgress) * weight * scale
+        let width = (10 - 7 * dragProgress) * weight * scale
+        let point = Self.point(at: angle)
+        let shape = CGRect(x: -length / 2, y: -width / 2, width: length, height: width)
+        let placement = CGAffineTransform(rotationAngle: -angle * .pi / 180)
+            .concatenating(CGAffineTransform(translationX: point.x * scale, y: point.y * scale))
+        return Path(roundedRect: shape, cornerRadius: width / 2, style: .circular).applying(placement)
     }
 
     private func circle(around center: CGPoint, radius: CGFloat, scale: CGFloat) -> CGRect {
