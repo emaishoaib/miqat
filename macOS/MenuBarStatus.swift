@@ -64,9 +64,11 @@ final class MenuBarStatus {
         self.next = next
 
         let remaining = next.begins.timeIntervalSince(now)
-        let showsCountdown = remaining < 60 * 60
+        let secondsLeft = max(0, Int(remaining.rounded(.up)))
+        let display = UserDefaults.standard.string(forKey: MenuBarDisplay.key).flatMap(MenuBarDisplay.init) ?? .timeThenCountdown
+        let showsCountdown = display.showsCountdown(secondsLeft: secondsLeft)
         detail = showsCountdown
-            ? Self.countdown(remaining)
+            ? Self.countdown(secondsLeft)
             : next.begins.formatted(date: .omitted, time: .shortened)
 
         let urgency = acknowledgedPrayer == next.begins ? .normal : PrayerUrgency(timeUntilNext: remaining)
@@ -79,12 +81,21 @@ final class MenuBarStatus {
             blinkOn.toggle()
             style = blinkOn ? .alert : .alertDimmed
         }
-        return showsCountdown ? .milliseconds(500) : Self.untilNextMinute(after: now)
+        if urgency == .imminent || showsCountdown && secondsLeft < 60 * 60 { return .milliseconds(500) }
+        return showsCountdown
+            ? Self.untilMinutesLeftChange(remaining: remaining, secondsLeft: secondsLeft)
+            : Self.untilNextMinute(after: now)
     }
 
-    private static func countdown(_ interval: TimeInterval) -> String {
-        let seconds = max(0, Int(interval.rounded(.up)))
-        return String(format: "%d:%02d", seconds / 60, seconds % 60)
+    private static func countdown(_ secondsLeft: Int) -> String {
+        guard secondsLeft >= 60 * 60 else { return String(format: "%d:%02d", secondsLeft / 60, secondsLeft % 60) }
+        let minutesLeft = secondsLeft / 60
+        return "\(minutesLeft / 60)h \(minutesLeft % 60)m"
+    }
+
+    private static func untilMinutesLeftChange(remaining: TimeInterval, secondsLeft: Int) -> Duration {
+        let changesAtSecondsLeft = secondsLeft / 60 * 60 - 1
+        return .seconds(remaining - Double(changesAtSecondsLeft) + 0.05)
     }
 
     private static func untilNextMinute(after date: Date) -> Duration {

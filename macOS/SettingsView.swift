@@ -44,6 +44,7 @@ struct SettingsView: View {
                     AppearancePicker()
                 }
                 Section("Menu bar") {
+                    MenuBarDisplayPicker()
                     MenuBarSizePicker()
                     PopUpAlignmentPicker()
                 }
@@ -62,6 +63,20 @@ struct SettingsView: View {
         .foregroundStyle(Color.primary)
         .tint(nil)
         .environment(\.colorScheme, .dark)
+    }
+}
+
+private struct MenuBarDisplayPicker: View {
+    @AppStorage(MenuBarDisplay.key) private var display = MenuBarDisplay.timeThenCountdown
+
+    var body: some View {
+        Picker("Shows", selection: $display) {
+            ForEach(MenuBarDisplay.allCases, id: \.self) { option in
+                Text(option.name)
+                    .tag(option)
+            }
+        }
+        .pickerStyle(.radioGroup)
     }
 }
 
