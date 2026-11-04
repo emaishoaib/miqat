@@ -13,9 +13,17 @@ final class PopUpPanel: NSPanel {
     }
 }
 
+@MainActor
+@Observable
+final class PopUpHeight {
+    static let shared = PopUpHeight()
+
+    var fittingContent = PopUpContent.defaultHeight
+}
+
 struct PopUpContent: View {
     static let width: CGFloat = 360
-    static let height: CGFloat = 680
+    static let defaultHeight: CGFloat = 680
 
     let model: TimetableModel
     var onOpenURL: () -> Void = {}
@@ -30,7 +38,7 @@ struct PopUpContent: View {
                 SettingsView(onCheckForUpdates: onCheckForUpdates)
             }
         }
-        .frame(width: Self.width, height: Self.height)
+        .frame(width: Self.width)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .environment(\.openURL, OpenURLAction { _ in
             onOpenURL()

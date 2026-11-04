@@ -69,6 +69,13 @@ struct SunPathView: View {
             .padding(.horizontal, Self.margin)
             .padding(.vertical, 12)
         }
+        #if os(macOS)
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            (geometry.contentSize.height + geometry.contentInsets.top + geometry.contentInsets.bottom).rounded(.up)
+        } action: { _, height in
+            PopUpHeight.shared.fittingContent = height
+        }
+        #endif
         #if os(iOS)
         .pullToRefresh {
             await refreshShowingProgress()

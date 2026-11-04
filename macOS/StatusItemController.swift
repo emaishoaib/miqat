@@ -50,6 +50,7 @@ final class StatusItemController: NSObject {
         }
         updateImage()
         observeStatus()
+        observeFittingHeight()
         closeSheetOnOutsideClicks()
         NotificationCenter.default.addObserver(self, selector: #selector(defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
         Task { await model.load() }
@@ -83,10 +84,12 @@ final class StatusItemController: NSObject {
         let width = PopUpContent.width
         let alignment = UserDefaults.standard.string(forKey: PopUpAlignment.key).flatMap(PopUpAlignment.init) ?? .center
         var x = alignment.x(width: width, under: icon)
+        var height = PopUpHeight.shared.fittingContent
         if let screen = statusItem.button?.window?.screen?.visibleFrame {
             x = min(max(x, screen.minX + Self.screenMargin), screen.maxX - width - Self.screenMargin)
+            height = min(height, icon.minY - Self.gap - screen.minY - Self.screenMargin)
         }
-        return NSRect(x: x, y: icon.minY - Self.gap - PopUpContent.height, width: width, height: PopUpContent.height)
+        return NSRect(x: x, y: icon.minY - Self.gap - height, width: width, height: height)
     }
 
     private func resize() {
@@ -106,6 +109,17 @@ final class StatusItemController: NSObject {
             Task { @MainActor [weak self] in
                 self?.updateImage()
                 self?.observeStatus()
+            }
+        }
+    }
+
+    private func observeFittingHeight() {
+        withObservationTracking {
+            _ = PopUpHeight.shared.fittingContent
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.resize()
+                self?.observeFittingHeight()
             }
         }
     }
