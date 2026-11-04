@@ -21,14 +21,13 @@ from pathlib import Path
 from typing import BinaryIO
 
 from claude_reader import TimetableError, read_with_claude
-from miqat_server import UploadError, upload_to_server
+from miqat_server import USER_AGENT, UploadError, upload_to_server
 
 LENGTH_FORMAT = "=I"
 LENGTH_SIZE_BYTES = struct.calcsize(LENGTH_FORMAT)
 MAX_DOWNLOADS = 6
 MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024
 DOWNLOAD_TIMEOUT_SECONDS = 20
-USER_AGENT = "Mozilla/5.0 (Macintosh) MiqatHelper"
 CAPTURES_DIR = Path(tempfile.gettempdir()) / "miqat-captures"
 IMAGE_SUFFIXES = {
     "image/png": ".png",
@@ -239,7 +238,11 @@ def main(
         message = read_message(stdin)
         if message is None:
             return
-        write_message(stdout, reply_to(message, dependencies))
+        try:
+            reply = reply_to(message, dependencies)
+        except (AttributeError, KeyError, OSError, TypeError, ValueError) as error:
+            reply = {"type": "error", "error": f"The Miqat helper failed: {error!r}"}
+        write_message(stdout, reply)
 
 
 if __name__ == "__main__":

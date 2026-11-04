@@ -364,3 +364,21 @@ def test_passes_the_server_rejection_on_to_claude(captures):
     )
 
     assert asked == [["Days are missing between 2026-11-01 and 2026-11-03."]]
+
+
+def test_replies_with_an_error_instead_of_exiting_when_something_breaks(captures):
+    def upload(place_id: str, days: list) -> dict:
+        raise KeyError("days_saved")
+
+    [captured] = replies_to(capture(), captures=captures)
+    replies = replies_to(
+        {"type": "upload", "captureId": captured["id"], "days": []},
+        {"type": "ping"},
+        captures=captures,
+        upload=upload,
+    )
+
+    assert replies == [
+        {"type": "error", "error": "The Miqat helper failed: KeyError('days_saved')"},
+        {"type": "pong"},
+    ]

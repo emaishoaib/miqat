@@ -1,5 +1,19 @@
+import io
+import urllib.error
+
+import miqat_server
 import pytest
-from miqat_server import UploadError, outcome, server_host, upload_url
+from miqat_server import UploadError, outcome, put_json, server_host, upload_url
+
+UPLOAD_URL = "https://miqat.example/admin/mosques/ChIJ123abc/timetable"
+
+
+def fake_urlopen(sent: list, status: int, body: bytes):
+    def urlopen(request, timeout):
+        sent.append(request)
+        raise urllib.error.HTTPError(request.full_url, status, "", {}, io.BytesIO(body))
+
+    return urlopen
 
 
 def test_reads_the_server_domain_from_the_release_config(tmp_path):
@@ -78,3 +92,29 @@ def test_explains_a_rejection_of_the_timetable_shape():
 def test_reports_other_replies_as_errors(status, message):
     with pytest.raises(UploadError, match=message):
         outcome(status, {"detail": "Something went wrong."})
+
+
+def test_sends_its_own_user_agent_because_cloudflare_blocks_pythons(monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        miqat_server.urllib.request, "urlopen", fake_urlopen(sent, 422, b"{}")
+    )
+
+    put_json(UPLOAD_URL, "token", {"days": []})
+
+    assert sent[0].get_header("User-agent") == miqat_server.USER_AGENT
+
+
+def test_reads_a_reply_that_is_not_json_as_no_body(monkeypatch):
+    monkeypatch.setattr(
+        miqat_server.urllib.request,
+        "urlopen",
+        fake_urlopen([], 403, b"error code: 1010\n"),
+    )
+
+    assert put_json(UPLOAD_URL, "token", {"days": []}) == (403, None)
+
+
+def test_reports_a_blocked_upload_by_its_status():
+    with pytest.raises(UploadError, match="status 403"):
+        outcome(403, None)

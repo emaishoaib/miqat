@@ -28,6 +28,7 @@ GCLOUD_LOCATIONS = [
 TOOL_DIRECTORIES = ["/opt/homebrew/bin", "/usr/local/bin"]
 GCLOUD_TIMEOUT_SECONDS = 60
 UPLOAD_TIMEOUT_SECONDS = 30
+USER_AGENT = "Mozilla/5.0 (Macintosh) MiqatHelper"
 
 
 class UploadError(Exception):
@@ -85,6 +86,13 @@ def admin_token(gcloud: Path) -> str:
     return completed.stdout.strip()
 
 
+def json_or_none(raw: bytes) -> object:
+    try:
+        return json.loads(raw)
+    except ValueError:
+        return None
+
+
 def put_json(url: str, token: str, body: dict) -> tuple[int, object]:
     request = urllib.request.Request(
         url,
@@ -93,16 +101,17 @@ def put_json(url: str, token: str, body: dict) -> tuple[int, object]:
         headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
         },
     )
     try:
         with urllib.request.urlopen(
             request, timeout=UPLOAD_TIMEOUT_SECONDS
         ) as response:
-            return response.status, json.loads(response.read() or b"null")
+            return response.status, json_or_none(response.read())
     except urllib.error.HTTPError as error:
-        return error.code, json.loads(error.read() or b"null")
-    except (OSError, ValueError) as error:
+        return error.code, json_or_none(error.read())
+    except OSError as error:
         raise UploadError(f"Couldn't reach the server: {error}") from error
 
 
