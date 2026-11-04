@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# Builds Miqat in Release for the Mac, the iPhone simulator and the Watch simulator, then restarts
-# all three from the new builds, to try a change right away. The simulators are the active iPhone and
+# Builds Miqat in Release for the Mac, the iPhone simulator and the Watch simulator. The Mac app is
+# quit and installed into /Applications, replacing the copy there, then reopened from there. The
+# iPhone and Watch apps are restarted from the new builds. The simulators are the active iPhone and
 # Watch pair. If either build fails, nothing running is touched.
 
 set -euo pipefail
@@ -12,6 +13,7 @@ PROJECT=Miqat.xcodeproj
 DERIVED_DATA=build
 PRODUCTS=$DERIVED_DATA/Build/Products
 MAC_APP=$PRODUCTS/Release/Miqat.app
+INSTALLED_APP=/Applications/Miqat.app
 PHONE_APP=$PRODUCTS/Release-iphonesimulator/Miqat.app
 WATCH_APP=$PRODUCTS/Release-watchsimulator/Miqat.app
 MAC_PROCESS=Miqat.app/Contents/MacOS/Miqat
@@ -55,10 +57,12 @@ build macOS "generic/platform=macOS"
 echo "Building the iPhone and Watch apps"
 build iOS "id=$PHONE"
 
-echo "Restarting the Mac app"
+echo "Installing the Mac app in /Applications and reopening it"
 pkill -f "$MAC_PROCESS" || true
 while pgrep -f "$MAC_PROCESS" > /dev/null; do sleep 0.1; done
-open "$MAC_APP"
+rm -rf "$INSTALLED_APP"
+ditto "$MAC_APP" "$INSTALLED_APP"
+open "$INSTALLED_APP"
 
 echo "Restarting the iPhone and Watch apps"
 xcrun simctl bootstatus "$PHONE" -b > /dev/null
