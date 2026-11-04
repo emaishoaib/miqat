@@ -10,6 +10,7 @@ Miqat.xcodeproj/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
+.wrangler/
 infra/.terraform/
 infra/backend.hcl
 *.tfstate
