@@ -76,6 +76,7 @@ private struct ServerTimetable: Decodable {
     }
 
     struct NearbyMosque: Decodable {
+        let id: String?
         let name: String
         let website: URL
     }
@@ -122,7 +123,7 @@ private struct ServerTimetable: Decodable {
             source: source,
             days: prayerDays,
             version: version,
-            nearbyMosque: nearbyMosque.map { PrayerKit.NearbyMosque(name: $0.name, website: $0.website) }
+            nearbyMosque: nearbyMosque.map { PrayerKit.NearbyMosque(id: $0.id, name: $0.name, website: $0.website) }
         )
     }
 

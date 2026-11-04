@@ -17,10 +17,12 @@ public struct Mosque: Codable, Hashable, Identifiable, Sendable {
 }
 
 public struct NearbyMosque: Codable, Hashable, Sendable {
+    public let id: String?
     public let name: String
     public let website: URL
 
-    public init(name: String, website: URL) {
+    public init(id: String?, name: String, website: URL) {
+        self.id = id
         self.name = name
         self.website = website
     }

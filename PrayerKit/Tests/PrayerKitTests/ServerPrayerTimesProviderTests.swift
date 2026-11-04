@@ -140,7 +140,7 @@ struct ServerPrayerTimesProviderTests {
           "version": "place-solihull:1+nearby:masjid:abc",
           "mosque": null,
           "city": {"id": "place-solihull", "name": "Solihull"},
-          "nearby_mosque": {"name": "Masjid Solihull", "website": "https://example.org/"},
+          "nearby_mosque": {"id": "masjid", "name": "Masjid Solihull", "website": "https://example.org/"},
           "time_zone": "Europe/London",
           "days": []
         }
@@ -148,7 +148,7 @@ struct ServerPrayerTimesProviderTests {
 
         let response = try #require(try ServerPrayerTimesProvider.response(from: cityBody, statusCode: 200))
 
-        #expect(response.nearbyMosque == NearbyMosque(name: "Masjid Solihull", website: URL(string: "https://example.org/")!))
+        #expect(response.nearbyMosque == NearbyMosque(id: "masjid", name: "Masjid Solihull", website: URL(string: "https://example.org/")!))
     }
 
     @Test func readsATimetableWithoutANearbyMosque() throws {

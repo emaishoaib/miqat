@@ -54,10 +54,19 @@ struct TimetableCacheTests {
         #expect(response.nearbyMosque == nil)
     }
 
+    @Test func readsANearbyMosqueSavedBeforeItHadAnID() throws {
+        let saved = Data(#"{"name":"Masjid Solihull","website":"https://example.org/"}"#.utf8)
+
+        let nearby = try JSONDecoder().decode(NearbyMosque.self, from: saved)
+
+        #expect(nearby.id == nil)
+        #expect(nearby.website == URL(string: "https://example.org/"))
+    }
+
     @Test func keepsTheNearbyMosqueWhenSaved() {
         let cache = TimetableCache(suiteName: suiteName)
         defer { UserDefaults().removePersistentDomain(forName: suiteName) }
-        let nearby = NearbyMosque(name: "Masjid Solihull", website: URL(string: "https://example.org/")!)
+        let nearby = NearbyMosque(id: "masjid", name: "Masjid Solihull", website: URL(string: "https://example.org/")!)
 
         cache.save(PrayerTimesResponse(source: .city(name: "Solihull"), days: [], nearbyMosque: nearby))
 
