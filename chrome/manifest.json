@@ -3,13 +3,14 @@
   "name": "Miqat Timetables",
   "version": "0.1.0",
   "description": "Upload a mosque's prayer times to Miqat from its website.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAngJ41/sJgtkDrDPV3oDSKhpmYW7uGOe6udX0x6OyVZ8yZrBI+MEa6+1sdsZHP8q/HtESo4mm63rDaVhYojcCCKQma522XQqc55rNtFBUDproNDBQMZNyMDzgD3dxZzQCnfNRtNStoHlJ1l1rcdIynP8J5R/X/5IwLnFKsS7l2+m6V6WxCCt07N02nTpHr5S1UhFlx5TMFePN+DEPxIAv/5jRnUXSwvFOGwBxN1wNi8DjmH81A2xpJWCtIeru024K7rB4c6wvBeQcvT2p1tgX5jwXr+d5fpTEyuXTwP6l2D0MXy2ekl9ejucO0312wFiiE3VoaP/KNok9oGIL6sAmMQIDAQAB",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "permissions": ["tabs", "storage"],
+  "permissions": ["tabs", "storage", "nativeMessaging"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

@@ -10,6 +10,20 @@ When a tab opens an address like that, the extension remembers the place ID for 
 
 Clicking the icon shows the place ID it found.
 
+## The Miqat helper
+
+Chrome extensions can't run programs on the Mac by themselves. Instead, Chrome's native messaging lets an extension start a program registered with Chrome and exchange JSON messages with it. The Miqat helper, `host/miqat_host.py`, is that program.
+
+For now it only answers a ping, so the popup can show whether the extension reaches it.
+
+The extension's ID is fixed by the `key` in `manifest.json`, so `host/install.sh` can name it as the one extension allowed to start the helper.
+
+The helper runs on the Mac's own Python 3.9, so its code has to stay compatible with it. Its tests run with:
+
+```bash
+uvx pytest chrome/host
+```
+
 ## Icons
 
 The icons in `icons/` are Miqat's app icon, exported from `Icon/AppIcon.icon` with Icon Composer's `ictool`. To export them again after the app icon changes, run this from the repo root:
@@ -27,5 +41,6 @@ done
 1. Open `chrome://extensions`
 2. Enable "Developer mode" (top right)
 3. Click "Load unpacked" and select this directory, `chrome/`
+4. Register the helper with Chrome by running `chrome/host/install.sh`
 
 After changing the extension's source, click its reload icon on `chrome://extensions`.

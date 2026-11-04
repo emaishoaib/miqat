@@ -16,3 +16,8 @@ p {
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+.secondary {
+  margin-top: 8px;
+  opacity: 0.6;
+}
