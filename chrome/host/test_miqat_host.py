@@ -4,12 +4,29 @@ import json
 import struct
 from pathlib import Path
 
+import pytest
+from claude_reader import TimetableError
 from miqat_host import main, read_message, write_message
 
 PAGE_URL = "https://masjid.example/times"
 SCREENSHOT = b"\x89PNG screenshot"
 PDF = b"%PDF-1.7 timetable"
 JPEG = b"\xff\xd8 timetable"
+TIMETABLE = {
+    "days": [
+        {
+            "date": "2026-11-01",
+            "times": {
+                "fajr": {"begins": "05:52", "jamaat": "06:30"},
+                "dhuhr": {"begins": "12:49"},
+                "asr": {"begins": "15:14"},
+                "maghrib": {"begins": "17:50"},
+                "isha": {"begins": "19:21"},
+            },
+        }
+    ],
+    "problems": [],
+}
 
 
 def framed(message: dict) -> bytes:
@@ -29,10 +46,21 @@ def fake_web(files: dict[str, tuple[bytes, str]]):
 NO_WEB = fake_web({})
 
 
-def replies_to(*messages: dict, fetch=NO_WEB, folder: Path | None = None) -> list[dict]:
+def reads_nothing(folder: Path) -> dict:
+    raise AssertionError("Claude shouldn't be asked")
+
+
+@pytest.fixture
+def captures(tmp_path) -> Path:
+    return tmp_path / "captures"
+
+
+def replies_to(
+    *messages: dict, captures: Path, fetch=NO_WEB, read_timetable=reads_nothing
+) -> list[dict]:
     stdin = io.BytesIO(b"".join(framed(message) for message in messages))
     stdout = io.BytesIO()
-    main(stdin, stdout, fetch=fetch, new_folder=lambda: folder)
+    main(stdin, stdout, fetch=fetch, read_timetable=read_timetable, captures=captures)
     stdout.seek(0)
     replies = []
     while (reply := read_message(stdout)) is not None:
@@ -56,19 +84,19 @@ def capture(pdfs: list[str] = (), images: list[str] = ()) -> dict:
     }
 
 
-def test_answers_a_ping_with_a_pong():
-    assert replies_to({"type": "ping"}) == [{"type": "pong"}]
+def test_answers_a_ping_with_a_pong(captures):
+    assert replies_to({"type": "ping"}, captures=captures) == [{"type": "pong"}]
 
 
-def test_answers_every_message_until_chrome_closes_the_input():
-    assert replies_to({"type": "ping"}, {"type": "ping"}) == [
+def test_answers_every_message_until_chrome_closes_the_input(captures):
+    assert replies_to({"type": "ping"}, {"type": "ping"}, captures=captures) == [
         {"type": "pong"},
         {"type": "pong"},
     ]
 
 
-def test_reports_a_message_type_it_does_not_know():
-    assert replies_to({"type": "dance"}) == [
+def test_reports_a_message_type_it_does_not_know(captures):
+    assert replies_to({"type": "dance"}, captures=captures) == [
         {"type": "error", "error": "Unknown message type 'dance'."}
     ]
 
@@ -81,20 +109,23 @@ def test_writes_the_length_before_the_message():
     assert stdout.getvalue() == framed({"type": "pong"})
 
 
-def test_saves_the_page_text_and_screenshot(tmp_path):
-    [reply] = replies_to(capture(), folder=tmp_path)
+def test_saves_the_page_text_and_screenshot_in_a_new_folder(captures):
+    [reply] = replies_to(capture(), captures=captures)
 
+    folder = Path(reply["folder"])
+    assert folder.parent == captures
     assert reply == {
         "type": "captured",
-        "folder": str(tmp_path),
+        "id": folder.name,
+        "folder": str(folder),
         "files": ["page.txt", "screenshot.png"],
         "failed": [],
     }
-    assert (tmp_path / "page.txt").read_text() == "Fajr 05:30"
-    assert (tmp_path / "screenshot.png").read_bytes() == SCREENSHOT
+    assert (folder / "page.txt").read_text() == "Fajr 05:30"
+    assert (folder / "screenshot.png").read_bytes() == SCREENSHOT
 
 
-def test_downloads_the_linked_pdfs_and_large_images(tmp_path):
+def test_downloads_the_linked_pdfs_and_large_images(captures):
     web = fake_web(
         {
             "https://masjid.example/november.pdf": (PDF, "application/pdf"),
@@ -107,25 +138,26 @@ def test_downloads_the_linked_pdfs_and_large_images(tmp_path):
             pdfs=["https://masjid.example/november.pdf"],
             images=["https://masjid.example/november.jpg"],
         ),
+        captures=captures,
         fetch=web,
-        folder=tmp_path,
     )
 
+    folder = Path(reply["folder"])
     assert reply["files"] == ["page.txt", "screenshot.png", "pdf-1.pdf", "image-1.jpg"]
-    assert (tmp_path / "pdf-1.pdf").read_bytes() == PDF
-    assert (tmp_path / "image-1.jpg").read_bytes() == JPEG
+    assert (folder / "pdf-1.pdf").read_bytes() == PDF
+    assert (folder / "image-1.jpg").read_bytes() == JPEG
 
 
-def test_records_where_each_file_came_from(tmp_path):
+def test_records_where_each_file_came_from(captures):
     web = fake_web({"https://masjid.example/november.pdf": (PDF, "application/pdf")})
 
-    replies_to(
+    [reply] = replies_to(
         capture(pdfs=["https://masjid.example/november.pdf"]),
+        captures=captures,
         fetch=web,
-        folder=tmp_path,
     )
 
-    assert json.loads((tmp_path / "capture.json").read_text()) == {
+    assert json.loads((Path(reply["folder"]) / "capture.json").read_text()) == {
         "place_id": "ChIJ123abc",
         "url": PAGE_URL,
         "title": "Prayer times",
@@ -137,7 +169,7 @@ def test_records_where_each_file_came_from(tmp_path):
     }
 
 
-def test_reports_downloads_that_fail_or_are_not_what_they_claim(tmp_path):
+def test_reports_downloads_that_fail_or_are_not_what_they_claim(captures):
     web = fake_web({"https://masjid.example/fake.pdf": (b"<html>", "text/html")})
 
     [reply] = replies_to(
@@ -148,8 +180,8 @@ def test_reports_downloads_that_fail_or_are_not_what_they_claim(tmp_path):
             ],
             images=["https://masjid.example/missing.png"],
         ),
+        captures=captures,
         fetch=web,
-        folder=tmp_path,
     )
 
     assert reply["files"] == ["page.txt", "screenshot.png"]
@@ -160,18 +192,59 @@ def test_reports_downloads_that_fail_or_are_not_what_they_claim(tmp_path):
     ]
 
 
-def test_skips_addresses_that_are_not_on_the_web(tmp_path):
+def test_skips_addresses_that_are_not_on_the_web(captures):
     [reply] = replies_to(
-        capture(images=["data:image/png;base64,AAAA"]), folder=tmp_path
+        capture(images=["data:image/png;base64,AAAA"]), captures=captures
     )
 
     assert reply["files"] == ["page.txt", "screenshot.png"]
     assert reply["failed"] == []
 
 
-def test_reports_an_incomplete_capture(tmp_path):
+def test_reports_an_incomplete_capture(captures):
     [reply] = replies_to(
-        {"type": "capture", "placeId": "ChIJ123abc", "capture": {}}, folder=tmp_path
+        {"type": "capture", "placeId": "ChIJ123abc", "capture": {}}, captures=captures
     )
 
     assert reply == {"type": "error", "error": "The capture was incomplete: 'text'."}
+
+
+def test_reads_the_timetable_from_a_capture(captures):
+    folders = []
+
+    def read_timetable(folder: Path) -> dict:
+        folders.append(folder)
+        return TIMETABLE
+
+    [captured] = replies_to(capture(), captures=captures)
+    [reply] = replies_to(
+        {"type": "read", "captureId": captured["id"]},
+        captures=captures,
+        read_timetable=read_timetable,
+    )
+
+    assert reply == {"type": "timetable", **TIMETABLE}
+    assert folders == [Path(captured["folder"]).resolve()]
+
+
+def test_reports_when_claude_cannot_read_the_timetable(captures):
+    def read_timetable(folder: Path) -> dict:
+        raise TimetableError("Claude took longer than 300 seconds.")
+
+    [captured] = replies_to(capture(), captures=captures)
+    [reply] = replies_to(
+        {"type": "read", "captureId": captured["id"]},
+        captures=captures,
+        read_timetable=read_timetable,
+    )
+
+    assert reply == {"type": "error", "error": "Claude took longer than 300 seconds."}
+
+
+@pytest.mark.parametrize("capture_id", ["", ".", "..", "../elsewhere", "missing"])
+def test_reads_only_folders_it_captured(captures, capture_id):
+    replies_to(capture(), captures=captures)
+
+    [reply] = replies_to({"type": "read", "captureId": capture_id}, captures=captures)
+
+    assert reply == {"type": "error", "error": f"There is no capture {capture_id!r}."}

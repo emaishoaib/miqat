@@ -19,13 +19,25 @@ Read timetable collects what the timetable might be in:
 - **PDFs** -- linked or embedded on the page, or the page itself when the tab is a PDF
 - **Large images** -- at least 300 pixels on each side, since timetables are often posted as pictures
 
-It sends these to the Miqat helper, which saves them in a new temporary folder and downloads up to six PDFs and six images. A download counts as failed when it doesn't arrive, or when it isn't really a PDF or image. The folder also gets `capture.json`, which records the mosque's place ID and where each file came from.
+It sends these to the Miqat helper, which saves them in a new folder under `miqat-captures` in the Mac's temporary folder. The helper also downloads up to six PDFs and six images. A download counts as failed when it doesn't arrive, or when it isn't really a PDF or image. The folder also gets `capture.json`, which records the mosque's place ID and where each file came from.
+
+## Reading the timetable
+
+The helper then runs Claude Code headless, with `claude --print`, in the capture's folder. Claude reads the files and returns every day of the timetable in the same format the server's upload takes, plus a list of problems it couldn't resolve. The popup shows how many days it found and those problems.
+
+The page comes from a website, so it could contain text written to steer Claude. Claude runs locked down for that reason:
+
+- **Restricted mode** -- no tools that run commands or reach the web, and no user or project settings
+- **Read only** -- the Read tool is its only tool, confined to the capture's folder
+- **No questions** -- anything else it tries is refused, because nobody is there to approve it
+
+Claude Code runs on your Claude plan, so it has to be signed in with `claude auth login`. The helper removes `ANTHROPIC_API_KEY` before starting it, so it never falls back to paid API usage. Reading can take a minute, and the popup has to stay open meanwhile.
 
 ## The Miqat helper
 
 Chrome extensions can't run programs on the Mac by themselves. Instead, Chrome's native messaging lets an extension start a program registered with Chrome and exchange JSON messages with it. The Miqat helper, `host/miqat_host.py`, is that program.
 
-It answers a ping, so the popup can show whether the extension reaches it, and saves the page captures described above.
+It answers a ping, so the popup can show whether the extension reaches it. It also saves the page captures and runs Claude on them, as described above. The Claude part lives in `host/claude_reader.py`.
 
 The extension's ID is fixed by the `key` in `manifest.json`, so `host/install.sh` can name it as the one extension allowed to start the helper.
 

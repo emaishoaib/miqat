@@ -18,12 +18,15 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import BinaryIO
 
+from claude_reader import TimetableError, read_with_claude
+
 LENGTH_FORMAT = "=I"
 LENGTH_SIZE_BYTES = struct.calcsize(LENGTH_FORMAT)
 MAX_DOWNLOADS = 6
 MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024
 DOWNLOAD_TIMEOUT_SECONDS = 20
 USER_AGENT = "Mozilla/5.0 (Macintosh) MiqatHelper"
+CAPTURES_DIR = Path(tempfile.gettempdir()) / "miqat-captures"
 IMAGE_SUFFIXES = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
@@ -32,7 +35,7 @@ IMAGE_SUFFIXES = {
 }
 
 Fetch = Callable[[str], tuple[bytes, str]]
-NewFolder = Callable[[], Path]
+ReadTimetable = Callable[[Path], dict]
 
 
 def read_message(stream: BinaryIO) -> dict | None:
@@ -59,8 +62,16 @@ def fetch_from_web(url: str) -> tuple[bytes, str]:
     return body, content_type
 
 
-def new_capture_folder() -> Path:
-    return Path(tempfile.mkdtemp(prefix="miqat-capture-"))
+def new_capture_folder(captures: Path) -> Path:
+    captures.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(dir=captures))
+
+
+def capture_folder(captures: Path, capture_id: str) -> Path | None:
+    folder = (captures / capture_id).resolve()
+    if folder.parent != captures.resolve() or not folder.is_dir():
+        return None
+    return folder
 
 
 def is_web_url(url: str) -> bool:
@@ -133,23 +144,44 @@ def save_capture(place_id: str, capture: dict, folder: Path, fetch: Fetch) -> di
     (folder / "capture.json").write_text(json.dumps(details, indent=2))
     return {
         "type": "captured",
+        "id": folder.name,
         "folder": str(folder),
         "files": list(sources),
         "failed": failed_pdfs + failed_images,
     }
 
 
-def reply_to(message: dict, fetch: Fetch, new_folder: NewFolder) -> dict:
+def read_capture(
+    capture_id: str, captures: Path, read_timetable: ReadTimetable
+) -> dict:
+    folder = capture_folder(captures, capture_id)
+    if folder is None:
+        return {"type": "error", "error": f"There is no capture {capture_id!r}."}
+    try:
+        timetable = read_timetable(folder)
+    except TimetableError as error:
+        return {"type": "error", "error": str(error)}
+    return {"type": "timetable", **timetable}
+
+
+def reply_to(
+    message: dict, fetch: Fetch, read_timetable: ReadTimetable, captures: Path
+) -> dict:
     kind = message.get("type")
     if kind == "ping":
         return {"type": "pong"}
     if kind == "capture":
         try:
             return save_capture(
-                message["placeId"], message["capture"], new_folder(), fetch
+                message["placeId"],
+                message["capture"],
+                new_capture_folder(captures),
+                fetch,
             )
         except (KeyError, ValueError) as error:
             return {"type": "error", "error": f"The capture was incomplete: {error}."}
+    if kind == "read":
+        return read_capture(message.get("captureId", ""), captures, read_timetable)
     return {"type": "error", "error": f"Unknown message type {kind!r}."}
 
 
@@ -157,13 +189,14 @@ def main(
     stdin: BinaryIO,
     stdout: BinaryIO,
     fetch: Fetch = fetch_from_web,
-    new_folder: NewFolder = new_capture_folder,
+    read_timetable: ReadTimetable = read_with_claude,
+    captures: Path = CAPTURES_DIR,
 ) -> None:
     while True:
         message = read_message(stdin)
         if message is None:
             return
-        write_message(stdout, reply_to(message, fetch, new_folder))
+        write_message(stdout, reply_to(message, fetch, read_timetable, captures))
 
 
 if __name__ == "__main__":

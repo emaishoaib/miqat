@@ -17,21 +17,31 @@ async function helperStatus() {
   }
 }
 
-function describe(reply) {
-  if (reply?.type === "error") return `The Miqat helper couldn't save it: ${reply.error}`;
-  const failed = reply.failed.length ? ` Couldn't download ${reply.failed.join(", ")}.` : "";
-  return `Saved ${reply.files.join(", ")} to ${reply.folder}.${failed}`;
+async function askHelper(message) {
+  const reply = await chrome.runtime.sendNativeMessage(HOST_NAME, message);
+  if (reply?.type === "error") throw new Error(reply.error);
+  return reply;
+}
+
+function describe(timetable) {
+  const { days, problems } = timetable;
+  const found = days.length
+    ? `Claude found ${days.length} days, from ${days[0].date} to ${days.at(-1).date}.`
+    : "Claude found no days.";
+  return [found, ...problems].join(" ");
 }
 
 async function readTimetable(tab, mosque) {
   readButton.disabled = true;
-  result.textContent = "Reading the page…";
   try {
+    result.textContent = "Capturing the page…";
     const capture = await capturePage(tab);
-    const reply = await chrome.runtime.sendNativeMessage(HOST_NAME, { type: "capture", placeId: mosque.placeId, capture });
-    result.textContent = describe(reply);
+    const captured = await askHelper({ type: "capture", placeId: mosque.placeId, capture });
+    result.textContent = "Claude is reading the timetable. Keep this open, it can take a minute…";
+    const timetable = await askHelper({ type: "read", captureId: captured.id });
+    result.textContent = describe(timetable);
   } catch (error) {
-    result.textContent = `Couldn't read the page: ${error.message}`;
+    result.textContent = `Couldn't read the timetable: ${error.message}`;
   } finally {
     readButton.disabled = false;
   }
