@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 from claude_reader import TimetableError
-from miqat_host import main, read_message, write_message
+from miqat_host import Dependencies, main, read_message, write_message
+from miqat_server import UploadError
 
 PAGE_URL = "https://masjid.example/times"
 SCREENSHOT = b"\x89PNG screenshot"
@@ -50,17 +51,28 @@ def reads_nothing(folder: Path) -> dict:
     raise AssertionError("Claude shouldn't be asked")
 
 
+def uploads_nothing(place_id: str, days: list) -> dict:
+    raise AssertionError("The server shouldn't be asked")
+
+
 @pytest.fixture
 def captures(tmp_path) -> Path:
     return tmp_path / "captures"
 
 
 def replies_to(
-    *messages: dict, captures: Path, fetch=NO_WEB, read_timetable=reads_nothing
+    *messages: dict,
+    captures: Path,
+    fetch=NO_WEB,
+    read_timetable=reads_nothing,
+    upload=uploads_nothing,
 ) -> list[dict]:
     stdin = io.BytesIO(b"".join(framed(message) for message in messages))
     stdout = io.BytesIO()
-    main(stdin, stdout, fetch=fetch, read_timetable=read_timetable, captures=captures)
+    dependencies = Dependencies(
+        fetch=fetch, read_timetable=read_timetable, upload=upload, captures=captures
+    )
+    main(stdin, stdout, dependencies)
     stdout.seek(0)
     replies = []
     while (reply := read_message(stdout)) is not None:
@@ -223,7 +235,11 @@ def test_reads_the_timetable_from_a_capture(captures):
         read_timetable=read_timetable,
     )
 
-    assert reply == {"type": "timetable", **TIMETABLE}
+    assert reply == {
+        "type": "timetable",
+        "source": {"placeId": "ChIJ123abc", "url": PAGE_URL, "title": "Prayer times"},
+        **TIMETABLE,
+    }
     assert folders == [Path(captured["folder"]).resolve()]
 
 
@@ -248,3 +264,69 @@ def test_reads_only_folders_it_captured(captures, capture_id):
     [reply] = replies_to({"type": "read", "captureId": capture_id}, captures=captures)
 
     assert reply == {"type": "error", "error": f"There is no capture {capture_id!r}."}
+
+
+def test_uploads_the_days_for_the_captured_mosque(captures):
+    uploads = []
+
+    def upload(place_id: str, days: list) -> dict:
+        uploads.append((place_id, days))
+        return {"type": "uploaded", "daysSaved": len(days)}
+
+    [captured] = replies_to(capture(), captures=captures)
+    [reply] = replies_to(
+        {"type": "upload", "captureId": captured["id"], "days": TIMETABLE["days"]},
+        captures=captures,
+        upload=upload,
+    )
+
+    assert reply == {"type": "uploaded", "daysSaved": 1}
+    assert uploads == [("ChIJ123abc", TIMETABLE["days"])]
+
+
+def test_removes_the_capture_once_its_days_are_uploaded(captures):
+    [captured] = replies_to(capture(), captures=captures)
+
+    replies_to(
+        {"type": "upload", "captureId": captured["id"], "days": []},
+        captures=captures,
+        upload=lambda place_id, days: {"type": "uploaded", "daysSaved": 0},
+    )
+
+    assert not Path(captured["folder"]).exists()
+
+
+def test_keeps_the_capture_when_the_server_rejects_the_days(captures):
+    rejection = {"type": "rejected", "problems": ["2026-11-02 is missing."]}
+
+    [captured] = replies_to(capture(), captures=captures)
+    [reply] = replies_to(
+        {"type": "upload", "captureId": captured["id"], "days": []},
+        captures=captures,
+        upload=lambda place_id, days: rejection,
+    )
+
+    assert reply == rejection
+    assert Path(captured["folder"]).exists()
+
+
+def test_reports_when_the_upload_cannot_be_sent(captures):
+    def upload(place_id: str, days: list) -> dict:
+        raise UploadError("Couldn't find the gcloud command.")
+
+    [captured] = replies_to(capture(), captures=captures)
+    [reply] = replies_to(
+        {"type": "upload", "captureId": captured["id"], "days": []},
+        captures=captures,
+        upload=upload,
+    )
+
+    assert reply == {"type": "error", "error": "Couldn't find the gcloud command."}
+
+
+def test_uploads_only_folders_it_captured(captures):
+    [reply] = replies_to(
+        {"type": "upload", "captureId": "..", "days": []}, captures=captures
+    )
+
+    assert reply == {"type": "error", "error": "There is no capture '..'."}

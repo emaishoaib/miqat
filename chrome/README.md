@@ -23,7 +23,7 @@ It sends these to the Miqat helper, which saves them in a new folder under `miqa
 
 ## Reading the timetable
 
-The helper then runs Claude Code headless, with `claude --print`, in the capture's folder. Claude reads the files and returns every day of the timetable in the same format the server's upload takes, plus a list of problems it couldn't resolve. The popup shows how many days it found and those problems.
+The helper then runs Claude Code headless, with `claude --print`, in the capture's folder. Claude reads the files and returns every day of the timetable in the same format the server's upload takes, plus a list of problems it couldn't resolve.
 
 The page comes from a website, so it could contain text written to steer Claude. Claude runs locked down for that reason:
 
@@ -31,13 +31,24 @@ The page comes from a website, so it could contain text written to steer Claude.
 - **Read only** -- the Read tool is its only tool, confined to the capture's folder
 - **No questions** -- anything else it tries is refused, because nobody is there to approve it
 
-Claude Code runs on your Claude plan, so it has to be signed in with `claude auth login`. The helper removes `ANTHROPIC_API_KEY` before starting it, so it never falls back to paid API usage. Reading can take a minute, and the popup has to stay open meanwhile.
+Claude Code runs on your Claude plan, so it has to be signed in with `claude auth login`. The helper removes `ANTHROPIC_API_KEY` before starting it, so it never falls back to paid API usage.
+
+## Reviewing and uploading
+
+Once the page is captured, the popup closes and a review tab opens next to the mosque's page. Reading can take a minute, and the tab can stay in the background meanwhile. It then shows every day Claude found, with any problems above the table.
+
+Nothing reaches the server until you press Upload. The helper then sends the days to the deployed server's admin upload, for the place ID recorded with the capture. It finds the server the same way the miqat-timetables skill does:
+
+- **Server domain** -- `MIQAT_SERVER_HOST` in `Config/Release.xcconfig`
+- **Admin token** -- the `admin-token` secret in Google Secret Manager, read through `gcloud` and never stored
+
+When the server rejects the days, the review tab lists its reasons and nothing is saved. Once an upload succeeds, the helper deletes the capture's folder.
 
 ## The Miqat helper
 
 Chrome extensions can't run programs on the Mac by themselves. Instead, Chrome's native messaging lets an extension start a program registered with Chrome and exchange JSON messages with it. The Miqat helper, `host/miqat_host.py`, is that program.
 
-It answers a ping, so the popup can show whether the extension reaches it. It also saves the page captures and runs Claude on them, as described above. The Claude part lives in `host/claude_reader.py`.
+It answers a ping, so the popup can show whether the extension reaches it. It also saves the page captures, runs Claude on them and uploads the result, as described above. The Claude part lives in `host/claude_reader.py`, and the upload in `host/miqat_server.py`.
 
 The extension's ID is fixed by the `key` in `manifest.json`, so `host/install.sh` can name it as the one extension allowed to start the helper.
 

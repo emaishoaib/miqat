@@ -10,15 +10,18 @@ from __future__ import annotations
 
 import base64
 import json
+import shutil
 import struct
 import sys
 import tempfile
 import urllib.request
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO
 
 from claude_reader import TimetableError, read_with_claude
+from miqat_server import UploadError, upload_to_server
 
 LENGTH_FORMAT = "=I"
 LENGTH_SIZE_BYTES = struct.calcsize(LENGTH_FORMAT)
@@ -36,6 +39,15 @@ IMAGE_SUFFIXES = {
 
 Fetch = Callable[[str], tuple[bytes, str]]
 ReadTimetable = Callable[[Path], dict]
+Upload = Callable[[str, list], dict]
+
+
+@dataclass(frozen=True)
+class Dependencies:
+    fetch: Fetch
+    read_timetable: ReadTimetable
+    upload: Upload
+    captures: Path
 
 
 def read_message(stream: BinaryIO) -> dict | None:
@@ -151,22 +163,41 @@ def save_capture(place_id: str, capture: dict, folder: Path, fetch: Fetch) -> di
     }
 
 
-def read_capture(
-    capture_id: str, captures: Path, read_timetable: ReadTimetable
-) -> dict:
-    folder = capture_folder(captures, capture_id)
+def capture_details(folder: Path) -> dict:
+    return json.loads((folder / "capture.json").read_text())
+
+
+def read_capture(capture_id: str, dependencies: Dependencies) -> dict:
+    folder = capture_folder(dependencies.captures, capture_id)
+    if folder is None:
+        return {"type": "error", "error": f"There is no capture {capture_id!r}."}
+    details = capture_details(folder)
+    try:
+        timetable = dependencies.read_timetable(folder)
+    except TimetableError as error:
+        return {"type": "error", "error": str(error)}
+    source = {
+        "placeId": details["place_id"],
+        "url": details["url"],
+        "title": details["title"],
+    }
+    return {"type": "timetable", "source": source, **timetable}
+
+
+def upload_capture(capture_id: str, days: list, dependencies: Dependencies) -> dict:
+    folder = capture_folder(dependencies.captures, capture_id)
     if folder is None:
         return {"type": "error", "error": f"There is no capture {capture_id!r}."}
     try:
-        timetable = read_timetable(folder)
-    except TimetableError as error:
+        result = dependencies.upload(capture_details(folder)["place_id"], days)
+    except UploadError as error:
         return {"type": "error", "error": str(error)}
-    return {"type": "timetable", **timetable}
+    if result["type"] == "uploaded":
+        shutil.rmtree(folder)
+    return result
 
 
-def reply_to(
-    message: dict, fetch: Fetch, read_timetable: ReadTimetable, captures: Path
-) -> dict:
+def reply_to(message: dict, dependencies: Dependencies) -> dict:
     kind = message.get("type")
     if kind == "ping":
         return {"type": "pong"}
@@ -175,28 +206,36 @@ def reply_to(
             return save_capture(
                 message["placeId"],
                 message["capture"],
-                new_capture_folder(captures),
-                fetch,
+                new_capture_folder(dependencies.captures),
+                dependencies.fetch,
             )
         except (KeyError, ValueError) as error:
             return {"type": "error", "error": f"The capture was incomplete: {error}."}
     if kind == "read":
-        return read_capture(message.get("captureId", ""), captures, read_timetable)
+        return read_capture(message.get("captureId", ""), dependencies)
+    if kind == "upload":
+        return upload_capture(
+            message.get("captureId", ""), message.get("days", []), dependencies
+        )
     return {"type": "error", "error": f"Unknown message type {kind!r}."}
 
 
+REAL_DEPENDENCIES = Dependencies(
+    fetch=fetch_from_web,
+    read_timetable=read_with_claude,
+    upload=upload_to_server,
+    captures=CAPTURES_DIR,
+)
+
+
 def main(
-    stdin: BinaryIO,
-    stdout: BinaryIO,
-    fetch: Fetch = fetch_from_web,
-    read_timetable: ReadTimetable = read_with_claude,
-    captures: Path = CAPTURES_DIR,
+    stdin: BinaryIO, stdout: BinaryIO, dependencies: Dependencies = REAL_DEPENDENCIES
 ) -> None:
     while True:
         message = read_message(stdin)
         if message is None:
             return
-        write_message(stdout, reply_to(message, fetch, read_timetable, captures))
+        write_message(stdout, reply_to(message, dependencies))
 
 
 if __name__ == "__main__":
