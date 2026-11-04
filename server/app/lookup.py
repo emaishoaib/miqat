@@ -194,12 +194,14 @@ def prepend_finished_day(
 
 
 def attach_nearby_mosque(timetable: TimetableOut, mosque: Mosque) -> TimetableOut:
-    details = f"{mosque.name}|{mosque.website}".encode()
+    details = f"{mosque.place_id}|{mosque.name}|{mosque.website}".encode()
     fingerprint = hashlib.sha256(details).hexdigest()[:8]
     return timetable.model_copy(
         update={
             "version": f"{timetable.version}+nearby:{mosque.place_id}:{fingerprint}",
-            "nearby_mosque": NearbyMosqueOut(name=mosque.name, website=mosque.website),
+            "nearby_mosque": NearbyMosqueOut(
+                id=mosque.place_id, name=mosque.name, website=mosque.website
+            ),
         }
     )
 

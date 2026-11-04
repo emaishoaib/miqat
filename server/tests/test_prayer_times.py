@@ -499,6 +499,7 @@ def test_names_the_nearest_mosque_with_a_website_with_the_city_times(session, cl
 
     assert body["city"]["id"] == "place-solihull"
     assert body["nearby_mosque"] == {
+        "id": "nearer",
         "name": "Masjid nearer",
         "website": "https://nearer.example",
     }

@@ -16,6 +16,7 @@ class MosqueOut(BaseModel):
 
 
 class NearbyMosqueOut(BaseModel):
+    id: str
     name: str
     website: str
 
