@@ -69,6 +69,7 @@ final class StatusItemController: NSObject {
     }
 
     @objc private func defaultsChanged() {
+        status.restartTicking()
         updateImage()
         DispatchQueue.main.async { [weak self] in
             self?.resize()

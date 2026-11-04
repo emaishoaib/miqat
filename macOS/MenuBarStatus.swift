@@ -18,11 +18,17 @@ final class MenuBarStatus {
     private let model: TimetableModel
     private var acknowledgedPrayer: Date?
     private var blinkOn = true
+    private var ticking: Task<Void, Never>?
 
     init(model: TimetableModel) {
         self.model = model
         observeTimetable()
-        Task { [weak self] in
+        restartTicking()
+    }
+
+    func restartTicking() {
+        ticking?.cancel()
+        ticking = Task { [weak self] in
             while !Task.isCancelled {
                 guard let delay = self?.refresh() else { return }
                 try? await Task.sleep(for: delay)
