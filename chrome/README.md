@@ -42,7 +42,9 @@ Nothing reaches the server until you press Upload. The helper then sends the day
 - **Server domain** -- `MIQAT_SERVER_HOST` in `Config/Release.xcconfig`
 - **Admin token** -- the `admin-token` secret in Google Secret Manager, read through `gcloud` and never stored
 
-When the server rejects the days, the review tab lists its reasons and nothing is saved. Once an upload succeeds, the helper deletes the capture's folder.
+When the server rejects the days, the review tab lists its reasons and nothing is saved. Ask Claude to fix these runs Claude again on the same capture. It gets the server's reasons and its previous answer, which the helper keeps in the capture's folder as `answer.json`. The corrected days then replace the table for another review, and nothing is uploaded until you press Upload again.
+
+Once an upload succeeds, the helper deletes the capture's folder.
 
 ## The Miqat helper
 

@@ -38,7 +38,7 @@ IMAGE_SUFFIXES = {
 }
 
 Fetch = Callable[[str], tuple[bytes, str]]
-ReadTimetable = Callable[[Path], dict]
+ReadTimetable = Callable[[Path, list], dict]
 Upload = Callable[[str, list], dict]
 
 
@@ -167,15 +167,18 @@ def capture_details(folder: Path) -> dict:
     return json.loads((folder / "capture.json").read_text())
 
 
-def read_capture(capture_id: str, dependencies: Dependencies) -> dict:
+def read_capture(
+    capture_id: str, rejections: list[str], dependencies: Dependencies
+) -> dict:
     folder = capture_folder(dependencies.captures, capture_id)
     if folder is None:
         return {"type": "error", "error": f"There is no capture {capture_id!r}."}
     details = capture_details(folder)
     try:
-        timetable = dependencies.read_timetable(folder)
+        timetable = dependencies.read_timetable(folder, rejections)
     except TimetableError as error:
         return {"type": "error", "error": str(error)}
+    (folder / "answer.json").write_text(json.dumps(timetable, indent=2))
     source = {
         "placeId": details["place_id"],
         "url": details["url"],
@@ -212,7 +215,8 @@ def reply_to(message: dict, dependencies: Dependencies) -> dict:
         except (KeyError, ValueError) as error:
             return {"type": "error", "error": f"The capture was incomplete: {error}."}
     if kind == "read":
-        return read_capture(message.get("captureId", ""), dependencies)
+        rejections = [str(rejection) for rejection in message.get("rejections", [])]
+        return read_capture(message.get("captureId", ""), rejections, dependencies)
     if kind == "upload":
         return upload_capture(
             message.get("captureId", ""), message.get("days", []), dependencies

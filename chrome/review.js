@@ -9,6 +9,7 @@ const problems = document.getElementById("problems");
 const table = document.getElementById("timetable");
 const actions = document.getElementById("actions");
 const uploadButton = document.getElementById("upload");
+const fixButton = document.getElementById("fix");
 const result = document.getElementById("result");
 const rejections = document.getElementById("rejections");
 
@@ -57,8 +58,12 @@ function showDays(days) {
   table.hidden = days.length === 0;
 }
 
-async function upload(days) {
+let days = [];
+let lastRejections = [];
+
+async function upload() {
   uploadButton.disabled = true;
+  fixButton.hidden = true;
   rejections.hidden = true;
   result.textContent = "Uploading…";
   try {
@@ -69,31 +74,41 @@ async function upload(days) {
       return;
     }
     result.textContent = "The server didn't save anything, because:";
-    showList(rejections, reply.problems);
+    lastRejections = reply.problems;
+    showList(rejections, lastRejections);
+    fixButton.hidden = false;
   } catch (error) {
     result.textContent = `Couldn't upload: ${error.message}`;
   }
   uploadButton.disabled = false;
 }
 
-async function review() {
-  status.textContent = "Claude is reading the timetable. This can take a minute…";
+async function read(rejected) {
+  actions.hidden = true;
+  status.textContent = rejected.length
+    ? "Claude is fixing what the server rejected. This can take a minute…"
+    : "Claude is reading the timetable. This can take a minute…";
   try {
-    const timetable = await askHelper({ type: "read", captureId });
+    const timetable = await askHelper({ type: "read", captureId, rejections: rejected });
+    days = timetable.days;
     source.textContent = `${timetable.source.title} · ${timetable.source.url}`;
-    status.textContent = timetable.days.length
-      ? `Claude found ${timetable.days.length} days. Check them against the mosque's timetable before uploading.`
+    status.textContent = days.length
+      ? `Claude found ${days.length} days. Check them against the mosque's timetable before uploading.`
       : "Claude found no days.";
     showList(problems, timetable.problems);
-    showDays(timetable.days);
-    if (timetable.days.length) {
-      uploadButton.textContent = `Upload ${timetable.days.length} days`;
-      uploadButton.addEventListener("click", () => upload(timetable.days));
-      actions.hidden = false;
-    }
+    showDays(days);
+    result.textContent = "";
+    rejections.hidden = true;
+    fixButton.hidden = true;
+    uploadButton.textContent = `Upload ${days.length} days`;
+    uploadButton.disabled = false;
+    actions.hidden = days.length === 0;
   } catch (error) {
     status.textContent = `Couldn't read the timetable: ${error.message}`;
+    actions.hidden = days.length === 0;
   }
 }
 
-review();
+uploadButton.addEventListener("click", upload);
+fixButton.addEventListener("click", () => read(lastRejections));
+read([]);

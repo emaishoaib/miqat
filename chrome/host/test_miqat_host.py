@@ -47,7 +47,7 @@ def fake_web(files: dict[str, tuple[bytes, str]]):
 NO_WEB = fake_web({})
 
 
-def reads_nothing(folder: Path) -> dict:
+def reads_nothing(folder: Path, rejections: list) -> dict:
     raise AssertionError("Claude shouldn't be asked")
 
 
@@ -224,7 +224,7 @@ def test_reports_an_incomplete_capture(captures):
 def test_reads_the_timetable_from_a_capture(captures):
     folders = []
 
-    def read_timetable(folder: Path) -> dict:
+    def read_timetable(folder: Path, rejections: list) -> dict:
         folders.append(folder)
         return TIMETABLE
 
@@ -244,7 +244,7 @@ def test_reads_the_timetable_from_a_capture(captures):
 
 
 def test_reports_when_claude_cannot_read_the_timetable(captures):
-    def read_timetable(folder: Path) -> dict:
+    def read_timetable(folder: Path, rejections: list) -> dict:
         raise TimetableError("Claude took longer than 300 seconds.")
 
     [captured] = replies_to(capture(), captures=captures)
@@ -330,3 +330,37 @@ def test_uploads_only_folders_it_captured(captures):
     )
 
     assert reply == {"type": "error", "error": "There is no capture '..'."}
+
+
+def test_keeps_claudes_answer_with_the_capture(captures):
+    [captured] = replies_to(capture(), captures=captures)
+
+    replies_to(
+        {"type": "read", "captureId": captured["id"]},
+        captures=captures,
+        read_timetable=lambda folder, rejections: TIMETABLE,
+    )
+
+    answer = Path(captured["folder"]) / "answer.json"
+    assert json.loads(answer.read_text()) == TIMETABLE
+
+
+def test_passes_the_server_rejection_on_to_claude(captures):
+    asked = []
+
+    def read_timetable(folder: Path, rejections: list) -> dict:
+        asked.append(rejections)
+        return TIMETABLE
+
+    [captured] = replies_to(capture(), captures=captures)
+    replies_to(
+        {
+            "type": "read",
+            "captureId": captured["id"],
+            "rejections": ["Days are missing between 2026-11-01 and 2026-11-03."],
+        },
+        captures=captures,
+        read_timetable=read_timetable,
+    )
+
+    assert asked == [["Days are missing between 2026-11-01 and 2026-11-03."]]
