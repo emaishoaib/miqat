@@ -21,9 +21,17 @@ public struct NearbyMosque: Codable, Hashable, Sendable {
     public let name: String
     public let website: URL
 
+    public static let placeFragmentPrefix = "miqat-place="
+
     public init(id: String?, name: String, website: URL) {
         self.id = id
         self.name = name
         self.website = website
+    }
+
+    public var websiteMarkedWithPlace: URL {
+        guard let id, var components = URLComponents(url: website, resolvingAgainstBaseURL: false), components.fragment == nil else { return website }
+        components.fragment = Self.placeFragmentPrefix + id
+        return components.url ?? website
     }
 }

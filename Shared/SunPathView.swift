@@ -291,6 +291,19 @@ private struct Header: View {
             .layoutPriority(1)
             Spacer()
             HStack(spacing: 22) {
+                #if os(macOS)
+                if let mosqueToCheck = source.mosqueToCheck(nearby: nearbyMosque) {
+                    Button {
+                        openURL(mosqueToCheck.websiteMarkedWithPlace)
+                    } label: {
+                        Image(systemName: "globe")
+                            .frame(width: 24, height: 24)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Check \(mosqueToCheck.name)")
+                    .accessibilityLabel("Open the website of \(mosqueToCheck.name)")
+                }
+                #endif
                 Button {
                     Task {
                         await refresh()
@@ -316,35 +329,20 @@ private struct Header: View {
     }
 
     private var sourceRow: some View {
-        HStack {
-            Button {
-                explanation.topic = .times
-                explanation.isShown = true
-            } label: {
-                HStack(spacing: 6) {
-                    SourceLabel(source: source)
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(Palette.ink.opacity(0.5))
-                }
-                .font(.subheadline)
+        Button {
+            explanation.topic = .times
+            explanation.isShown = true
+        } label: {
+            HStack(spacing: 6) {
+                SourceLabel(source: source)
+                Image(systemName: "info.circle")
+                    .foregroundStyle(Palette.ink.opacity(0.5))
             }
-            .buttonStyle(.plain)
-            .sheet(isPresented: $explanation.isShown) {
-                TimesExplanationView(source: source, topic: explanation.topic, hijriDateHasMovedOn: hijriDate != date)
-            }
-            #if os(macOS)
-            Spacer()
-            if case .city = source, let nearbyMosque {
-                Button("Check Masjid") {
-                    openURL(nearbyMosque.website)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .pointerStyle(.link)
-                .help(nearbyMosque.name)
-                .accessibilityHint("Opens the website of \(nearbyMosque.name)")
-            }
-            #endif
+            .font(.subheadline)
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $explanation.isShown) {
+            TimesExplanationView(source: source, topic: explanation.topic, hijriDateHasMovedOn: hijriDate != date)
         }
         .padding(.top, 6)
     }
