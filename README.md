@@ -8,6 +8,12 @@ The Xcode project is generated from `project.yml` using `xcodegen` and is not co
 
 Release builds read the server's domain, the Apple development team, the updates host and the Sparkle public key from `Config/Release.xcconfig`, which is not committed. Copy `Config/Release.xcconfig.example` and fill it in.
 
+To try a change, use the rebuild script. It generates the project and builds Miqat in Release for the Mac, the iPhone simulator and the Watch simulator. Then it restarts all three from the new builds. The simulators it uses are the active iPhone and Watch pair, which it boots if needed. If either build fails, nothing running is touched:
+
+```bash
+scripts/rebuild.sh
+```
+
 # Infrastructure
 
 All of it is managed by Terraform in `infra/`.
