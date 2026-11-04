@@ -37,7 +37,7 @@ Claude Code runs on your Claude plan, so it has to be signed in with `claude aut
 
 Once the page is captured, the popup closes and a review tab opens next to the mosque's page. Reading can take a minute, and the tab can stay in the background meanwhile. It then shows every day Claude found, with any problems above the table.
 
-Nothing reaches the server until you press Upload. The helper then sends the days to the deployed server's admin upload, for the place ID recorded with the capture. It finds the server the same way the miqat-timetables skill does:
+Nothing reaches the server until you press Upload. The helper then sends the days to the deployed server's admin upload, for the place ID recorded with the capture. It needs two things to reach the server:
 
 - **Server domain** -- `MIQAT_SERVER_HOST` in `Config/Release.xcconfig`
 - **Admin token** -- the `admin-token` secret in Google Secret Manager, read through `gcloud` and never stored

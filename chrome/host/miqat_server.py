@@ -1,9 +1,8 @@
 """Uploads a timetable to the deployed Miqat server.
 
-It finds the server and its admin token the same way the miqat-timetables
-skill does. The domain comes from Config/Release.xcconfig, and the token from
-Google Secret Manager through the Mac's gcloud sign-in. The token is never
-written anywhere or included in an error.
+The server's domain comes from MIQAT_SERVER_HOST in Config/Release.xcconfig,
+and its admin token from Google Secret Manager through the Mac's gcloud
+sign-in. The token is never written anywhere or included in an error.
 """
 
 from __future__ import annotations
