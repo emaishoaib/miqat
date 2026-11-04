@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 PROJECT=Miqat.xcodeproj
 SCHEME=Miqat-macOS
 TARGET=Miqat-macOS
-NOTARY_PROFILE=miqat-notary
+NOTARY_PROFILE=notary
 DERIVED_DATA=build
 WORK=build/release
 RELEASES=releases
