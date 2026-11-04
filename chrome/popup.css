@@ -17,6 +17,26 @@ p {
   overflow-wrap: anywhere;
 }
 
+button {
+  margin-top: 12px;
+  padding: 6px 12px;
+  font: inherit;
+  color: #f7f5ef;
+  background: #14386f;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+#result:not(:empty) {
+  margin-top: 8px;
+}
+
 .secondary {
   margin-top: 8px;
   opacity: 0.6;

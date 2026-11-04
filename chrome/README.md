@@ -8,13 +8,24 @@ The globe button in the Mac app opens the mosque's website with its place ID aft
 
 When a tab opens an address like that, the extension remembers the place ID for that tab. Its toolbar icon lights up there, and stays lit while you move between pages on the same site. Everywhere else the icon is greyed out.
 
-Clicking the icon shows the place ID it found.
+Clicking the icon shows the place ID it found, and a Read timetable button.
+
+## Reading the page
+
+Read timetable collects what the timetable might be in:
+
+- **Page text** -- everything readable on the page
+- **Screenshot** -- the part of the page currently on screen
+- **PDFs** -- linked or embedded on the page, or the page itself when the tab is a PDF
+- **Large images** -- at least 300 pixels on each side, since timetables are often posted as pictures
+
+It sends these to the Miqat helper, which saves them in a new temporary folder and downloads up to six PDFs and six images. A download counts as failed when it doesn't arrive, or when it isn't really a PDF or image. The folder also gets `capture.json`, which records the mosque's place ID and where each file came from.
 
 ## The Miqat helper
 
 Chrome extensions can't run programs on the Mac by themselves. Instead, Chrome's native messaging lets an extension start a program registered with Chrome and exchange JSON messages with it. The Miqat helper, `host/miqat_host.py`, is that program.
 
-For now it only answers a ping, so the popup can show whether the extension reaches it.
+It answers a ping, so the popup can show whether the extension reaches it, and saves the page captures described above.
 
 The extension's ID is fixed by the `key` in `manifest.json`, so `host/install.sh` can name it as the one extension allowed to start the helper.
 
