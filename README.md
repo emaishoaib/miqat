@@ -68,7 +68,7 @@ Terraform does not track the server's image, so applying it never rolls a deploy
 
 # Releasing
 
-There are two separate paths, because the iPhone and Mac apps reach people in different ways.
+There are two separate paths, because the iPhone and Mac apps reach people in different ways. One script, `scripts/release.sh`, takes both at once, so the apps always share a version.
 
 ## iPhone and Watch: beta through TestFlight
 
@@ -82,12 +82,11 @@ TestFlight is Apple's app for installing beta versions.
 
 **Every beta**
 
-1. Raise the version in `project.yml`, then run `xcodegen generate`
-2. In Xcode, choose the `Miqat-iOS` scheme and **Any iOS Device**, then **Product -> Archive**. This builds the iPhone app with the Watch app inside it
-3. In the window that opens, click **Distribute App -> TestFlight**. Xcode signs and uploads it
-4. Wait for Apple to process the build, and it appears in App Store Connect
-5. Give testers access to the build
-6. Testers install it from the TestFlight app on their iPhone. The Watch app comes with it
+1. Raise the version and build number in `project.yml`. App Store Connect turns down a build number it has already seen
+2. Run `scripts/release.sh`. Alongside the Mac release below, it builds the iPhone app with the Watch app inside it, signs it and uploads it to App Store Connect. It uses the account signed in to Xcode, the same as **Product -> Archive** and **Distribute App -> TestFlight** would
+3. Wait for Apple to process the build, and it appears in App Store Connect
+4. Give testers access to the build
+5. Testers install it from the TestFlight app on their iPhone. The Watch app comes with it
 
 ## Mac: DMG from any website
 
@@ -102,7 +101,7 @@ TestFlight is Apple's app for installing beta versions.
 ### Release
 
 1. Raise the version and build number in `project.yml`
-2. Run `scripts/release.sh`. It does all of this for you:
+2. Run `scripts/release.sh`. Alongside the TestFlight upload above, it does all of this for you:
    - builds and signs the app
    - puts it in a DMG
    - gets Apple to scan it

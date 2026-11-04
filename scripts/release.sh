@@ -1,8 +1,12 @@
 #!/bin/bash
 #
-# Builds a signed and notarized Miqat DMG for the Mac and adds it to the appcast.
-# Everything it produces lands in releases/, and the new DMG and appcast are then
-# uploaded to the updates bucket in Cloudflare R2.
+# Releases Miqat on every platform at the version in project.yml.
+#
+# The Mac app becomes a signed and notarized DMG, added to the appcast. Both land in
+# releases/ and are then uploaded to the updates bucket in Cloudflare R2.
+#
+# The iPhone app, with the Watch app inside it, is archived and uploaded to App Store
+# Connect for TestFlight, using the Apple account signed in to Xcode.
 
 set -euo pipefail
 
@@ -11,6 +15,7 @@ cd "$(dirname "$0")/.."
 PROJECT=Miqat.xcodeproj
 SCHEME=Miqat-macOS
 TARGET=Miqat-macOS
+IOS_SCHEME=Miqat-iOS
 NOTARY_PROFILE=notary
 BUCKET=apps
 DERIVED_DATA=build
@@ -67,6 +72,7 @@ rm -rf "$WORK"
 mkdir -p "$WORK"
 
 ARCHIVE=$WORK/Miqat.xcarchive
+IOS_ARCHIVE=$WORK/Miqat-iOS.xcarchive
 EXPORT=$WORK/export
 STAGE=$WORK/stage
 APP=$EXPORT/Miqat.app
@@ -120,6 +126,46 @@ xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$DMG"
 spctl --assess --type open --context context:primary-signature "$DMG"
 
+echo "Archiving the iPhone and Watch apps"
+xcodebuild archive \
+    -project "$PROJECT" \
+    -scheme "$IOS_SCHEME" \
+    -configuration Release \
+    -destination "generic/platform=iOS" \
+    -derivedDataPath "$DERIVED_DATA" \
+    -archivePath "$IOS_ARCHIVE" \
+    -allowProvisioningUpdates \
+    > "$WORK/archive-ios.log" 2>&1 \
+    || fail "Archiving the iPhone app failed. See $WORK/archive-ios.log"
+
+cat > "$WORK/TestFlightOptions.plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>destination</key>
+	<string>upload</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>teamID</key>
+	<string>$TEAM</string>
+</dict>
+</plist>
+EOF
+
+echo "Uploading the iPhone and Watch apps to App Store Connect"
+xcodebuild -exportArchive \
+    -archivePath "$IOS_ARCHIVE" \
+    -exportPath "$WORK/export-ios" \
+    -exportOptionsPlist "$WORK/TestFlightOptions.plist" \
+    -allowProvisioningUpdates \
+    > "$WORK/upload-ios.log" 2>&1 \
+    || fail "Uploading the iPhone app failed. See $WORK/upload-ios.log"
+
 echo "Updating the appcast"
 "$GENERATE_APPCAST" --download-url-prefix "https://$UPDATES_HOST/miqat/" "$RELEASES"
 
@@ -128,4 +174,4 @@ upload "$DMG" "$(basename "$DMG")"
 upload "$DMG" Miqat.dmg --cache-control no-cache
 upload "$RELEASES/appcast.xml" appcast.xml
 
-echo "Released Miqat $VERSION ($BUILD) to https://$UPDATES_HOST/miqat/"
+echo "Released Miqat $VERSION ($BUILD) to https://$UPDATES_HOST/miqat/ and to App Store Connect"
