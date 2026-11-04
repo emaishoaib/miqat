@@ -1,0 +1,18 @@
+body {
+  width: 280px;
+  margin: 0;
+  padding: 16px;
+  font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1c2340;
+  background: #f7f5ef;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
