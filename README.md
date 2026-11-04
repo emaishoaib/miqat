@@ -96,7 +96,7 @@ TestFlight is Apple's app for installing beta versions.
 ### Release
 
 1. Raise the version and build number in `project.yml`
-2. Run `scripts/release-mac.sh`. It does all of this for you:
+2. Run `scripts/release.sh`. It does all of this for you:
    - builds and signs the app
    - puts it in a DMG
    - gets Apple to scan it
