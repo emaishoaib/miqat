@@ -28,7 +28,7 @@ setting() {
 }
 
 upload() {
-    npx --yes wrangler r2 object put "$BUCKET/miqat/$(basename "$1")" --file "$1" --remote
+    npx --yes wrangler r2 object put "$BUCKET/miqat/$2" --file "$1" --remote "${@:3}"
 }
 
 [ -f Config/Release.xcconfig ] || fail "Config/Release.xcconfig is missing. Copy the example and fill it in."
@@ -124,7 +124,8 @@ echo "Updating the appcast"
 "$GENERATE_APPCAST" --download-url-prefix "https://$UPDATES_HOST/miqat/" "$RELEASES"
 
 echo "Uploading to the $BUCKET bucket"
-upload "$DMG"
-upload "$RELEASES/appcast.xml"
+upload "$DMG" "$(basename "$DMG")"
+upload "$DMG" Miqat.dmg --cache-control no-cache
+upload "$RELEASES/appcast.xml" appcast.xml
 
 echo "Released Miqat $VERSION ($BUILD) to https://$UPDATES_HOST/miqat/"
