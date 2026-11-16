@@ -8,11 +8,13 @@ The Xcode project is generated from `project.yml` using `xcodegen` and is not co
 
 Release builds read the server's domain, the Apple development team, the updates host and the Sparkle public key from `Config/Release.xcconfig`, which is not committed. Copy `Config/Release.xcconfig.example` and fill it in.
 
-To try a change, use the rebuild script. It generates the project and builds Miqat in Release for the Mac, the iPhone simulator and the Watch simulator. Then it quits the Mac app and installs the new build in `/Applications`, replacing the copy there, then reopens it. It restarts the iPhone and Watch apps from the new builds. The simulators it uses are the active iPhone and Watch pair, which it boots if needed. If either build fails, nothing running is touched:
+To try a change, type `go` anywhere in this repo and pick Rebuild. It generates the project and builds Miqat in Release for the Mac, the iPhone simulator and the Watch simulator. Then it quits the Mac app and installs the new build in `/Applications`, replacing the copy there, then reopens it. It restarts the iPhone and Watch apps from the new builds. The simulators it uses are the active iPhone and Watch pair, which it boots if needed. If either build fails, nothing running is touched:
 
 ```bash
-scripts/rebuild.sh
+go
 ```
+
+The menu and its rebuild and release scripts live in the `apps/` folder of the workshop repo, shared by all my apps. The `go` command comes from the workshop repo's shell setup, and the menu needs gum, which the workshop's `setup.sh` installs.
 
 # Infrastructure
 
@@ -68,7 +70,7 @@ Terraform does not track the server's image, so applying it never rolls a deploy
 
 # Releasing
 
-There are two separate paths, because the iPhone and Mac apps reach people in different ways. One script, `scripts/release.sh`, takes both at once, so the apps always share a version.
+There are two separate paths, because the iPhone and Mac apps reach people in different ways. One release, picked as Release in `go`, takes both at once, so the apps always share a version.
 
 ## iPhone and Watch: beta through TestFlight
 
@@ -83,7 +85,7 @@ TestFlight is Apple's app for installing beta versions.
 **Every beta**
 
 1. Raise the version and build number in `project.yml`. App Store Connect turns down a build number it has already seen
-2. Run `scripts/release.sh`. Alongside the Mac release below, it builds the iPhone app with the Watch app inside it, signs it and uploads it to App Store Connect. It uses the account signed in to Xcode, the same as **Product -> Archive** and **Distribute App -> TestFlight** would
+2. Type `go` and pick Release. Alongside the Mac release below, it builds the iPhone app with the Watch app inside it, signs it and uploads it to App Store Connect. It uses the account signed in to Xcode, the same as **Product -> Archive** and **Distribute App -> TestFlight** would
 3. Wait for Apple to process the build, and it appears in App Store Connect
 4. Give testers access to the build
 5. Testers install it from the TestFlight app on their iPhone. The Watch app comes with it
@@ -101,7 +103,7 @@ TestFlight is Apple's app for installing beta versions.
 ### Release
 
 1. Raise the version and build number in `project.yml`
-2. Run `scripts/release.sh`. Alongside the TestFlight upload above, it does all of this for you:
+2. Type `go` and pick Release. Alongside the TestFlight upload above, it does all of this for you:
    - builds and signs the app
    - puts it in a DMG
    - gets Apple to scan it
