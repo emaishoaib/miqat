@@ -19,3 +19,5 @@ infra/backend.hcl
 crash.log
 Config/Release.xcconfig
 releases/
+PLAN.md
+RELEASING.md
