@@ -1,136 +1,67 @@
 # Miqat
 
-Prayer times from your nearest mosque on iOS, watchOS and macOS.
+Prayer times from your nearest mosque on iPhone, Apple Watch and the Mac.
 
-# Note
+Most prayer apps work the times out from the sun, but your mosque publishes its own timetable and that's the one you actually pray by. Miqat finds the nearest mosque whose timetable it has and shows those times, and falls back to times worked out for your city when no mosque nearby has one.
 
-The Xcode project is generated from `project.yml` using `xcodegen` and is not committed.
+## What it does
 
-Release builds read the server's domain, the Apple development team, the updates host and the Sparkle public key from `Config/Release.xcconfig`, which is not committed. Copy `Config/Release.xcconfig.example` and fill it in.
+**Today's times** -- every prayer for the day with the next one picked out, the jamaat times wherever the mosque lists them and a dial showing the sun's path across the day. Miqat also explains where the times came from and why it picked that mosque.
 
-To try a change, type `go` anywhere in this repo and pick Rebuild. It generates the project and builds Miqat in Release for the Mac, the iPhone simulator and the Watch simulator. Then it quits the Mac app and installs the new build in `/Applications`, replacing the copy there, then reopens it. It restarts the iPhone and Watch apps from the new builds. The simulators it uses are the active iPhone and Watch pair, which it boots if needed. If either build fails, nothing running is touched:
+**Hijri date** -- shown beside today's date and moved on to the next day at Maghrib the way the Islamic calendar counts days.
 
-```bash
-go
-```
+**Reminders** -- a notification on the iPhone for each prayer you pick, either when it begins or a few minutes before, with the sound of your choice.
 
-The menu and its rebuild and release scripts live in the `apps/` folder of the workshop repo, shared by all my apps. The `go` command comes from the workshop repo's shell setup, and the menu needs gum, which the workshop's `setup.sh` installs.
+**Widgets** -- the day's times on the iPhone's Home Screen and the next prayer on its Lock Screen and on the watch face.
 
-# Infrastructure
+**Apple Watch** -- the day's times on your wrist, sent over from the iPhone.
+
+**Mac menu bar** -- the next prayer's time or a countdown to it in the menu bar, or the time that turns into a countdown in the last hour, with the whole day in a pop-up underneath.
+
+**Adding timetables** -- a Chrome extension reads a mosque's timetable off its website with Claude Code and uploads it to Miqat once you've checked it. Its own README in `chrome/` covers how it works.
+
+## How it works
+
+**Finding the times** -- the app sends your location to Miqat's server which looks up the 20 closest mosques within 50 km and uses the first one whose timetable it has. When none of them has one it uses times for your city from AlAdhan, a public prayer times service.
+
+**Staying current** -- the app keeps the last timetable it got so it still works offline, and it checks for a new one every day and whenever you pull down to refresh. The server only sends the timetable again when it has changed.
+
+**What reaches the internet** -- your location goes to Miqat's server, which asks Google for the mosques near you and your time zone. The Mac app also checks for updates.
+
+## Infrastructure
 
 All of it is managed by Terraform in `infra/`.
 
-## Google Cloud
+- **Cloud Run** -- runs the server built from `server/` and scales between none and two instances
+- **Artifact Registry** -- stores the server's images and keeps the two newest
+- **Cloud Build** -- builds and deploys the server whenever a push to `main` changes it
+- **Secret Manager** -- holds the database address, the Google Maps key, the admin token and the Neon and Cloudflare tokens
+- **Google Maps** -- its key can only reach the Places, Time Zone and Geocoding APIs
+- **Cloud Storage** -- keeps Terraform's state in a private bucket
+- **Neon** -- hosts the Postgres database which sleeps when it's idle
+- **Cloudflare** -- hosts the domain's DNS and runs a Worker that forwards the custom domain to Cloud Run
 
-- Cloud Run runs the server image built from `server/`, scaling from 0 to 2 instances
-- Artifact Registry stores the server images, keeping the 2 most recent
-- Cloud Build builds and deploys the server when a commit to `main` changes `server/`
-- Secret Manager holds the database URL, the Google Maps key, the admin token, and the Neon and Cloudflare tokens
-- The Google Maps key is restricted to the Places, Time Zone and Geocoding APIs
-- Cloud Storage holds Terraform's state in a private bucket
+## Requirements
 
-## Neon
+- **iOS, watchOS and macOS 26** -- to run the apps
+- **Sparkle** -- installs updates on the Mac and is the apps' only third-party dependency
+- **Python 3.12 and uv** -- for the server
+- **Terraform** -- for the infrastructure
 
-- Hosts the Postgres database, which sleeps when idle
+## Building
 
-## Cloudflare
+The Xcode project is generated from `project.yml` using `xcodegen` and isn't committed, and neither is `Config/Release.xcconfig` which holds the server's domain, the Apple development team, the updates host and the Sparkle public key for release builds. Make it by copying `Config/Release.xcconfig.example` and filling it in.
 
-- Hosts the domain's DNS
-- Runs a Worker that forwards requests on the custom domain to Cloud Run
+To try a change type `go` anywhere in this repo and pick Rebuild to:
 
-## Setup
+1. Build Miqat in Release for the Mac, the iPhone simulator and the Watch simulator
+2. Quit the running Mac app and install the new build in `/Applications` then reopen it
+3. Restart the iPhone and Watch apps from the new builds on the active iPhone and Watch pair, booting them if needed
 
-These files hold IDs and are not committed. Each has an `.example` next to it.
+If either build fails nothing running is touched.
 
-- `infra/terraform.tfvars`: project, Maps key, Neon and Cloudflare IDs, the domain, and the GitHub repository
-- `infra/backend.hcl`: the state bucket
+The `go` command, its menu and its scripts all come from a private repo shared by all my apps, and the menu needs [gum](https://github.com/charmbracelet/gum) which the private repo installs.
 
-```bash
-cd infra
-terraform init -backend-config=backend.hcl
-```
+## Releasing
 
-Secret values live only in Secret Manager. To change one:
-
-```bash
-printf %s "new-value" | gcloud secrets versions add admin-token --data-file=-
-```
-
-## Deploying
-
-Cloud Build deploys the server whenever a push to `main` changes `server/` or `cloudbuild.yaml`. It builds the image, pushes it to Artifact Registry and points Cloud Run at it. Each run shows up under Cloud Build's History in the Google Cloud console.
-
-To deploy without a new commit:
-
-```bash
-gcloud builds triggers run deploy-server --region=europe-central2 --branch=main
-```
-
-Terraform does not track the server's image, so applying it never rolls a deploy back.
-
-# Releasing
-
-There are two separate paths, because the iPhone and Mac apps reach people in different ways. One release, picked as Release in `go`, takes both at once, so the apps always share a version.
-
-## iPhone and Watch: beta through TestFlight
-
-TestFlight is Apple's app for installing beta versions.
-
-**Setup**
-
-1. Join the Apple Developer Program
-2. Sign in to your developer account in Xcode
-3. Create Miqat's app record in App Store Connect, Apple's website for managing your apps
-
-**Every beta**
-
-1. Raise the version and build number in `project.yml`. App Store Connect turns down a build number it has already seen
-2. Type `go` and pick Release. Alongside the Mac release below, it builds the iPhone app with the Watch app inside it, signs it and uploads it to App Store Connect. It uses the account signed in to Xcode, the same as **Product -> Archive** and **Distribute App -> TestFlight** would
-3. Wait for Apple to process the build, and it appears in App Store Connect
-4. Give testers access to the build
-5. Testers install it from the TestFlight app on their iPhone. The Watch app comes with it
-
-## Mac: DMG from any website
-
-**Setup**
-
-1. **Create a Developer ID certificate** -- this shows Macs the app came from you
-2. **Store the notarization login** -- this lets the script send the app to Apple for scanning. Miqat uses the login stored as `notary`
-3. **Generate the Sparkle key** -- this proves that updates really came from you
-4. **Get a website address** -- this is where the DMG and update file will live. It's the `apps` bucket in Cloudflare R2, connected to a custom domain. Set that domain as `MIQAT_UPDATES_HOST` in `Config/Release.xcconfig`
-5. **Log in to Cloudflare** -- this lets the script upload to the bucket. Run `npx wrangler login` once
-
-### Release
-
-1. Raise the version and build number in `project.yml`
-2. Type `go` and pick Release. Alongside the TestFlight upload above, it does all of this for you:
-   - builds and signs the app
-   - puts it in a DMG
-   - gets Apple to scan it
-   - updates `appcast.xml`, the file that tells installed apps what the latest version is
-   - uploads the DMG and then `appcast.xml` to the website, so the appcast never lists a DMG that isn't there yet
-   - uploads the DMG a second time as `Miqat.dmg`, which each release overwrites, so that name is always the latest version
-
-**Sharing the download**
-
-Share `https://<updates host>/miqat`, where `<updates host>` is the domain in `MIQAT_UPDATES_HOST`. It works with or without the slash at the end. A redirect rule in Cloudflare sends both on to `/miqat/Miqat.dmg`, so they always download the latest version. The rule is set up once, under Rules > Redirect Rules for the domain:
-
-- **When incoming requests match** -- a custom filter expression, entered through **Edit expression**:
-
-  ```
-  http.host eq "<updates host>" and http.request.uri.path in {"/miqat" "/miqat/"}
-  ```
-
-- **Then** -- a static redirect to `https://<updates host>/miqat/Miqat.dmg` with status code 302, and the query string not preserved
-
-The expression lists both paths exactly. A wildcard such as `/miqat*` would also catch `/miqat/Miqat.dmg` and `/miqat/appcast.xml`, so the download would redirect to itself and installed copies couldn't check for updates.
-
-It's a 302, a temporary redirect, because browsers remember a 301 permanently.
-
-The rule is added by hand rather than in `infra/`. Terraform would take over all of the domain's redirect rules and remove any it doesn't know about.
-
-**What people do**
-
-1. They download the DMG from `https://<updates host>/miqat`
-2. They open it and drag Miqat into Applications
-3. From then on, the app checks `appcast.xml` by itself and offers new versions as you release them. They can also use **Check for Updates…** in settings
+The server deploys itself through Cloud Build whenever a push to `main` changes it. The Mac app is released as a DMG from its own website and updates itself through Sparkle, and the iPhone and Watch apps go out as a beta through TestFlight.
