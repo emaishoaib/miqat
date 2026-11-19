@@ -8,6 +8,7 @@ struct SunPathView: View {
 
     let response: PrayerTimesResponse
     let now: Date
+    let isRefreshing: Bool
     let refresh: () async -> Void
 
     @State private var contentWidth: CGFloat = 0
@@ -17,7 +18,6 @@ struct SunPathView: View {
     @State private var rippleAt: Date?
     @State private var draggedTime: Date?
     @State private var spin: SunSpin?
-    @State private var isRefreshing = false
     @State private var systemIsDark = Self.systemIsDark()
     @AppStorage(Appearance.key, store: Appearance.store) private var appearance = Appearance.sun
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -34,9 +34,7 @@ struct SunPathView: View {
 
         ScrollView {
             VStack(spacing: 28) {
-                Header(date: shown?.date ?? shownTime, hijriDate: shown?.hijriDate(at: shownTime) ?? shownTime, source: shown?.source ?? response.source, nearbyMosque: response.nearbyMosque, isRefreshing: isRefreshing) {
-                    await refreshShowingProgress()
-                }
+                Header(date: shown?.date ?? shownTime, hijriDate: shown?.hijriDate(at: shownTime) ?? shownTime, source: shown?.source ?? response.source, nearbyMosque: response.nearbyMosque, isRefreshing: isRefreshing, refresh: refresh)
                 if let path, let next, let today {
                     KeyframeAnimator(initialValue: 1.0, trigger: rippleAt) { ripple in
                         SunPathDial(day: today, path: path, next: next, now: shownTime, usesDayColours: usesDayColours(on: path), launch: launch, ripple: ripple, rippleAt: rippleAt, countdownVisibility: draggedTime == nil ? 1 : 0, dragProgress: draggedTime == nil ? 0 : 1)
@@ -77,9 +75,7 @@ struct SunPathView: View {
         }
         #endif
         #if os(iOS)
-        .pullToRefresh {
-            await refreshShowingProgress()
-        }
+        .pullToRefresh(refresh)
         #endif
         .onChange(of: response.nextPrayer(after: now)?.begins) { began, _ in
             if let began, began <= now {
@@ -164,13 +160,6 @@ struct SunPathView: View {
         guard let time = Calendar.current.date(byAdding: .day, value: days, to: shownTime) else { return }
         spin = nil
         draggedTime = Calendar.current.isDate(time, inSameDayAs: now) ? nil : response.closestCoveredTime(to: time)
-    }
-
-    private func refreshShowingProgress() async {
-        guard !isRefreshing else { return }
-        isRefreshing = true
-        await refresh()
-        isRefreshing = false
     }
 }
 

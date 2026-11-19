@@ -23,7 +23,7 @@ struct TimetableScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .loaded(let response):
             TimelineView(.everyMinute) { context in
-                SunPathView(response: response, now: context.date) {
+                SunPathView(response: response, now: context.date, isRefreshing: model.isRefreshing) {
                     await model.load()
                 }
             }
