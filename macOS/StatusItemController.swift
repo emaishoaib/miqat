@@ -53,7 +53,18 @@ final class StatusItemController: NSObject {
         observeFittingHeight()
         closeSheetOnOutsideClicks()
         NotificationCenter.default.addObserver(self, selector: #selector(defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
-        Task { await model.load() }
+        measureWhileHidden()
+        Task {
+            await model.load()
+            measureWhileHidden()
+        }
+    }
+
+    /// Lays out the hidden pop-up so the timetable reports its height before the first open.
+    private func measureWhileHidden() {
+        guard !panel.isVisible else { return }
+        panel.setContentSize(NSSize(width: PopUpContent.width, height: PopUpHeight.shared.fittingContent))
+        content.view.layoutSubtreeIfNeeded()
     }
 
     private func closeSheetOnOutsideClicks() {

@@ -21,6 +21,9 @@ struct SunPathView: View {
     @State private var systemIsDark = Self.systemIsDark()
     @AppStorage(Appearance.key, store: Appearance.store) private var appearance = Appearance.sun
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    #if os(macOS)
+    @Environment(\.appearsActive) private var appearsActive
+    #endif
 
     private var shownTime: Date {
         draggedTime ?? now
@@ -46,13 +49,10 @@ struct SunPathView: View {
                     .overlay {
                         SunHandle(angle: path.angle(at: shownTime), day: shown?.date ?? shownTime, onDrag: drag(toAngle:), onRelease: spinBack, onStep: step(byDays:))
                     }
-                    .onAppear {
-                        guard !Self.hasGrownIn else { return }
-                        Self.hasGrownIn = true
-                        withAnimation(.linear(duration: 1.4)) {
-                            launch = 1
-                        }
-                    }
+                    .onAppear(perform: growInOnceShown)
+                    #if os(macOS)
+                    .onChange(of: appearsActive, growInOnceShown)
+                    #endif
                 }
                 if let shown {
                     PrayerList(day: shown, next: next, now: shownTime)
@@ -104,6 +104,18 @@ struct SunPathView: View {
         .preferredColorScheme(.dark)
         .onReceive(NotificationCenter.default.publisher(for: Self.becameActive)) { _ in
             systemIsDark = Self.systemIsDark()
+        }
+    }
+
+    /// Grows the dial in the first time it is on screen, which on the Mac waits for the pop-up to open.
+    private func growInOnceShown() {
+        #if os(macOS)
+        guard appearsActive else { return }
+        #endif
+        guard !Self.hasGrownIn else { return }
+        Self.hasGrownIn = true
+        withAnimation(.linear(duration: 1.4)) {
+            launch = 1
         }
     }
 
